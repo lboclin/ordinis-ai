@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Menu } from 'lucide-react';
+import { clsx } from 'clsx';
+import axios from 'axios';
 
 const ChatInterface = ({ onMenuClick }) => {
   const [messages, setMessages] = useState([
     { id: 1, role: 'assistant', content: 'Olá! Sou o Ordinis AI. Como posso ajudar você a organizar sua vida hoje?' },
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -16,32 +19,48 @@ const ChatInterface = ({ onMenuClick }) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = { id: Date.now(), role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Assuming backend is running on localhost:8000
+      // In production, this should be an env var
+      const response = await axios.post('http://localhost:8000/chat', {
+        message: userMessage.content
+      });
+
       const aiMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'Entendi. Estou processando sua solicitação...'
+        content: response.data.response
       };
       setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error("Error communicating with backend:", error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: 'Desculpe, não consegui conectar ao servidor. Verifique se a API está rodando.'
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-1 flex-col h-full relative bg-gray-900">
+    <div className="flex flex-1 flex-col h-full relative bg-chatgpt-main">
       {/* Top Bar (Mobile Hamburger) */}
-      <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-gray-900 border-b border-gray-800">
+      <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-chatgpt-main border-b border-white/10">
         <button
           onClick={onMenuClick}
-          className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-gray-800"
+          className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10"
         >
           <Menu size={24} />
         </button>
@@ -56,11 +75,12 @@ const ChatInterface = ({ onMenuClick }) => {
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 ${
+              className={clsx(
+                "max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3",
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-br-none'
-                  : 'bg-gray-800 text-gray-100 rounded-bl-none'
-              }`}
+                  : 'bg-[#444654] text-gray-100 rounded-bl-none border border-black/10'
+              )}
             >
               <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">
                 {msg.content}
@@ -68,11 +88,18 @@ const ChatInterface = ({ onMenuClick }) => {
             </div>
           </div>
         ))}
+        {isLoading && (
+           <div className="flex justify-start">
+             <div className="bg-[#444654] text-gray-100 rounded-2xl rounded-bl-none border border-black/10 px-4 py-3">
+               <p className="animate-pulse">Digitando...</p>
+             </div>
+           </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-gray-900 border-t border-gray-800">
+      <div className="p-4 bg-chatgpt-main border-t border-white/10">
         <form onSubmit={handleSend} className="max-w-3xl mx-auto relative flex items-center gap-2">
           <div className="relative flex-1">
             <input
@@ -80,19 +107,20 @@ const ChatInterface = ({ onMenuClick }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Digite uma mensagem..."
-              className="w-full bg-gray-800 text-white placeholder-gray-400 rounded-full pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-gray-700"
+              className="w-full bg-[#40414F] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-black/10 shadow-sm disabled:opacity-50"
+              disabled={isLoading}
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 rounded-md hover:bg-black/20 transition-colors"
             >
               <Mic size={20} />
             </button>
           </div>
           <button
             type="submit"
-            disabled={!input.trim()}
-            className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={!input.trim() || isLoading}
+            className="bg-[#19c37d] hover:bg-[#1a885d] text-white p-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send size={20} />
           </button>

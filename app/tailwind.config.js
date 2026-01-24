@@ -8,7 +8,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Custom dark theme colors inspired by ChatGPT
+        chatgpt: {
+          sidebar: '#202123',
+          main: '#343541',
+        },
+        // Keep existing gray scale if needed, or rely on defaults
         gray: {
           50: '#f9fafb',
           100: '#f3f4f6',
@@ -18,11 +22,11 @@ export default {
           500: '#6b7280',
           600: '#4b5563',
           700: '#374151',
-          750: '#2D333F', // Custom shade
+          750: '#2D333F',
           800: '#1f2937',
-          850: '#1A202C', // Custom shade
+          850: '#1A202C',
           900: '#111827',
-          950: '#0B0F19', // Custom shade
+          950: '#0B0F19',
         }
       }
     },
