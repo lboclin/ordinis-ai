@@ -20,57 +20,67 @@ except Exception as e:
 def process_message(text: str) -> dict:
     """
     Processes the user text using Gemini API to extract structured data.
-    Returns a dictionary with keys: tipo, valor, categoria, descricao, data_hora.
     """
     if not client:
         print("Gemini client is not initialized.")
         return {
-            "tipo": "despesa",
-            "valor": 0.0,
-            "categoria": "Indefinido (Client not initialized)",
-            "descricao": "Mock data - Check API Key",
-            "data_hora": datetime.now().isoformat()
+            "type": "error",
+            "data": {
+                "description": "Client not initialized",
+                "category": "Error"
+            }
         }
 
     current_time = datetime.now().isoformat()
 
     prompt = f"""
-    Atue como um assistente pessoal financeiro e de agenda.
-    Analise a seguinte mensagem do usuário e extraia as informações em formato JSON.
-    A mensagem pode ser um registro de despesa ou um compromisso na agenda.
+    Atue como um assistente pessoal financeiro e de agenda para o Ordinis AI.
+    Sua tarefa é analisar a mensagem do usuário e extrair dados estruturados em JSON.
 
-    Instruções:
-    1. Se for despesa, extraia valor, descrição e categoria.
-    2. Categorias básicas sugeridas: 'Alimentação', 'Transporte', 'Supermercado', 'Restaurante', 'Combustível', 'Saúde', 'Lazer'.
-    3. Se o gasto não se encaixar nas básicas, você DEVE CRIAR uma categoria nova que seja descritiva e curta (ex: 'Farmácia', 'Educação', 'Pets', 'Manutenção').
-    4. Se for compromisso, extraia título (como descrição) e data/hora.
-    5. 'data_hora' deve ser uma string ISO 8601 completa (ex: '2023-10-27T14:30:00'). Se o ano não for especificado, assuma o ano atual. Hoje é {current_time}.
+    REGRAS DE CATEGORIZAÇÃO (Mapeamento Inteligente):
+    - Gasolina, Uber, Ônibus, Metrô -> "Transporte"
+    - Remédio, Farmácia, Médico, Dentista -> "Saúde"
+    - Restaurante, Supermercado, Lanche, Bar, Ifood -> "Alimentação"
+    - Academia, Boxe, Suplementos, Natação -> "Bem-estar/Esporte"
+    - Aluguel, Luz, Água, Internet, Condomínio -> "Moradia"
+    - Se não encaixar em nenhuma, use "Outros" ou crie uma categoria curta e descritiva (1 palavra).
 
-    Formato de saída desejado (JSON):
+    FORMATO DA RESPOSTA (JSON APENAS):
     {{
-        "tipo": "despesa" | "compromisso",
-        "descricao": string,
-        "valor": float (apenas se despesa, senão null),
-        "categoria": string (apenas se despesa, senão null),
-        "data_hora": string (ISO format)
+      "type": "expense" | "appointment",
+      "data": {{
+        "description": string (descrição clara do item ou título do compromisso),
+        "amount": float (apenas se for expense, senão null),
+        "category": string (use o mapeamento inteligente acima),
+        "date": "YYYY-MM-DD" (se o ano não for informado, use o atual: {datetime.now().year}),
+        "time": "HH:mm" (se disponível, senão null),
+        "tags": [string] (palavras-chave relevantes)
+      }}
     }}
 
-    Mensagem: "{text}"
+    Hoje é: {current_time}
+
+    Mensagem do usuário: "{text}"
     """
 
     try:
         response = client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=prompt
+            contents=prompt,
+            config={
+                'response_mime_type': 'application/json'
+            }
         )
-        # Clean up code blocks if Gemini returns markdown
-        content = response.text.replace("```json", "").replace("```", "").strip()
+        content = response.text
+        # Ensure it's clean JSON
+        content = content.replace("```json", "").replace("```", "").strip()
         data = json.loads(content)
         return data
     except Exception as e:
         print(f"Error processing with Gemini: {e}")
         return {
-            "tipo": "erro",
-            "descricao": "Erro de processamento",
-            "data_hora": current_time
+            "type": "error",
+            "data": {
+                "description": "Erro de processamento",
+            }
         }

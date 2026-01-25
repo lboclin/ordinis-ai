@@ -4,8 +4,10 @@ import 'react-calendar/dist/Calendar.css';
 import { Menu } from 'lucide-react';
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 const Agenda = ({ onMenuClick }) => {
+  const { lastDataUpdate } = useAuth();
   const [value, onChange] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ const Agenda = ({ onMenuClick }) => {
       }
     };
     fetchData();
-  }, []);
+  }, [lastDataUpdate]);
 
   // Filter appointments for the selected date
   const selectedDateAppointments = appointments.filter(app => {

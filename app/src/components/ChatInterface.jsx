@@ -3,8 +3,10 @@ import { Send, Mic, Menu } from 'lucide-react';
 import { clsx } from 'clsx';
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 const ChatInterface = ({ onMenuClick }) => {
+  const { triggerDataUpdate } = useAuth();
   const [messages, setMessages] = useState([
     { id: 1, role: 'assistant', content: 'Olá! Sou o Ordinis AI. Como posso ajudar você a organizar sua vida hoje?' },
   ]);
@@ -52,6 +54,11 @@ const ChatInterface = ({ onMenuClick }) => {
         content: response.data.response
       };
       setMessages((prev) => [...prev, aiMessage]);
+
+      if (response.data.saved) {
+          triggerDataUpdate();
+      }
+
     } catch (error) {
       console.error("Error communicating with backend:", error);
       const errorMessage = {

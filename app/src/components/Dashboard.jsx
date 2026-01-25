@@ -3,10 +3,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Dashboard = ({ onMenuClick }) => {
+  const { lastDataUpdate } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -29,7 +31,7 @@ const Dashboard = ({ onMenuClick }) => {
       }
     };
     fetchData();
-  }, []);
+  }, [lastDataUpdate]);
 
   // Filter expenses by selected month
   const filteredExpenses = expenses.filter(item => {

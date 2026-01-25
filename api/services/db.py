@@ -22,20 +22,19 @@ def get_user_from_token(token: str):
         print(f"Error validating token: {e}")
         return None
 
-def save_expense(user_id: str, data: dict):
+def save_expense(user_id: str, payload: dict):
+    """
+    payload is the 'data' part of the JSON: { description, amount, category, date, ... }
+    """
     if not supabase:
         return False
     try:
-        # Map Gemini JSON keys to DB columns
-        # JSON: { "tipo": "despesa", "descricao": "...", "valor": float, "categoria": "...", "data_hora": "ISO" }
-        # DB: category, amount, date, description
-
         db_payload = {
             "user_id": user_id,
-            "category": data.get("categoria"),
-            "amount": data.get("valor"),
-            "date": data.get("data_hora"), # DB date/timestamp column usually handles ISO strings
-            "description": data.get("descricao", "")
+            "category": payload.get("category"),
+            "amount": payload.get("amount"),
+            "date": payload.get("date"),
+            "description": payload.get("description", "")
         }
 
         response = supabase.table("expenses").insert(db_payload).execute()
@@ -44,19 +43,28 @@ def save_expense(user_id: str, data: dict):
         print(f"Error saving expense: {e}")
         return False
 
-def save_appointment(user_id: str, data: dict):
+def save_appointment(user_id: str, payload: dict):
+    """
+    payload is the 'data' part of the JSON: { description, date, time, ... }
+    """
     if not supabase:
         return False
     try:
-        # Map Gemini JSON keys to DB columns
-        # JSON: { "tipo": "compromisso", "descricao": "Title/Desc", "data_hora": "ISO" }
-        # DB: title, date, description
+        # Construct timestamp if time is available
+        date_str = payload.get("date")
+        time_str = payload.get("time")
+        final_date = date_str
+
+        if date_str and time_str:
+            final_date = f"{date_str}T{time_str}:00"
+        elif date_str:
+            final_date = f"{date_str}T00:00:00"
 
         db_payload = {
             "user_id": user_id,
-            "title": data.get("descricao"),
-            "date": data.get("data_hora"),
-            "description": "" # Optional extra description if needed
+            "title": payload.get("description"),
+            "date": final_date,
+            "description": "" # Optional extra details
         }
 
         response = supabase.table("appointments").insert(db_payload).execute()

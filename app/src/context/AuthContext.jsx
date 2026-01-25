@@ -6,6 +6,7 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastDataUpdate, setLastDataUpdate] = useState(Date.now());
 
   useEffect(() => {
     if (!supabase) {
@@ -48,8 +49,12 @@ export const AuthProvider = ({ children }) => {
     if (error) console.error("Error logging out:", error.message);
   };
 
+  const triggerDataUpdate = () => {
+      setLastDataUpdate(Date.now());
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider value={{ user, loginWithGoogle, logout, loading, lastDataUpdate, triggerDataUpdate }}>
       {!loading && children}
     </AuthContext.Provider>
   );
