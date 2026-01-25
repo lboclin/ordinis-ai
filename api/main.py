@@ -92,15 +92,24 @@ def chat_endpoint(request: ChatRequest, user = Depends(get_current_user)):
         }
 
     except Exception as e:
-        print(f"Server Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Server Error in /chat: {e}")
+        # Return a 500 but log the specific error
+        raise HTTPException(status_code=500, detail="Internal Server Error processing request")
 
 @app.get("/dashboard")
 def get_dashboard_data(user = Depends(get_current_user)):
-    expenses = get_expenses(user.id)
-    return expenses
+    try:
+        expenses = get_expenses(user.id)
+        return expenses
+    except Exception as e:
+        print(f"Error fetching dashboard data: {e}")
+        return []
 
 @app.get("/agenda")
 def get_agenda_data(user = Depends(get_current_user)):
-    appointments = get_appointments(user.id)
-    return appointments
+    try:
+        appointments = get_appointments(user.id)
+        return appointments
+    except Exception as e:
+        print(f"Error fetching agenda data: {e}")
+        return []

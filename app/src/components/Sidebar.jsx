@@ -1,8 +1,11 @@
 import React from 'react';
 import { LayoutDashboard, User, Settings, History, X, LogOut, Calendar, MessageSquare } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ isOpen, onClose, onNavigate, currentView }) => {
+  const { logout } = useAuth();
+
   const menuItems = [
     { icon: MessageSquare, label: 'Chat', id: 'chat' },
     { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
@@ -17,6 +20,15 @@ const Sidebar = ({ isOpen, onClose, onNavigate, currentView }) => {
     // On mobile, close sidebar after selection
     if (window.innerWidth < 768) {
         onClose();
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+        await logout();
+        // AuthContext will update state, redirecting to login
+    } catch (error) {
+        console.error("Logout failed", error);
     }
   };
 
@@ -74,7 +86,10 @@ const Sidebar = ({ isOpen, onClose, onNavigate, currentView }) => {
 
           {/* Footer (Optional User Info or Logout) */}
           <div className="p-4 border-t border-white/10">
-            <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-gray-300 hover:bg-white/10 hover:text-white transition-colors">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+            >
               <LogOut size={20} />
               <span>Sair</span>
             </button>
