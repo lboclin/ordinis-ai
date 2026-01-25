@@ -5,4 +5,8 @@ venv/
 .env
 .DS_Store
 credentials.json
+<<<<<<< HEAD
 client_secret_507762756640-ps8g797u0pn0rg4nfdtehqlrf830df3u.apps.googleusercontent.com.json
+=======
+client_secret_507762756640-ps8g797u0pn0rg4nfdtehqlrf830df3u.apps.googleusercontent.com.json
+>>>>>>> init-project-structure-5015823866286265717
