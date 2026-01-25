@@ -2,4 +2,7 @@ __pycache__/
 *.pyc
 venv/
 .env
+credentials.json
 .DS_Store
+supabase_password.txt
+client_secret_507762756640-ps8g797u0pn0rg4nfdtehqlrf830df3u.apps.googleusercontent.com.json

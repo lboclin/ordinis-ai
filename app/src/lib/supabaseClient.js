@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_KEY
 
 // Tolerant initialization to avoid crashing if env vars are missing during build/dev without .env
 export const supabase = (supabaseUrl && supabaseAnonKey)
