@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Menu } from 'lucide-react';
 import { clsx } from 'clsx';
 import axios from 'axios';
+import { supabase } from '../lib/supabaseClient';
 
 const ChatInterface = ({ onMenuClick }) => {
   const [messages, setMessages] = useState([
@@ -29,10 +30,20 @@ const ChatInterface = ({ onMenuClick }) => {
     setIsLoading(true);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+          throw new Error("No auth token");
+      }
+
       // Assuming backend is running on localhost:8000
-      // In production, this should be an env var
       const response = await axios.post('http://localhost:8000/chat', {
         message: userMessage.content
+      }, {
+          headers: {
+              Authorization: `Bearer ${token}`
+          }
       });
 
       const aiMessage = {
@@ -46,7 +57,7 @@ const ChatInterface = ({ onMenuClick }) => {
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'Desculpe, não consegui conectar ao servidor. Verifique se a API está rodando.'
+        content: 'Desculpe, não consegui conectar ao servidor ou você não está logado.'
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {

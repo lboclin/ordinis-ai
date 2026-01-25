@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import Agenda from './components/Agenda';
 import Dashboard from './components/Dashboard';
+import Login from './components/Login';
 
-function App() {
+const AuthenticatedApp = () => {
+  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState('chat');
+
+  if (!user) {
+    return <Login />;
+  }
 
   const renderView = () => {
     switch (currentView) {
@@ -17,8 +24,6 @@ function App() {
       case 'dashboard':
         return <Dashboard onMenuClick={() => setSidebarOpen(true)} />;
       default:
-        // For now, other views also fall back to chat or placeholders.
-        // Or render a simple placeholder:
         return (
           <div className="flex flex-1 flex-col h-full bg-chatgpt-main text-white items-center justify-center">
             <h2 className="text-2xl font-bold">Em breve</h2>
@@ -40,6 +45,14 @@ function App() {
         {renderView()}
       </main>
     </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AuthenticatedApp />
+    </AuthProvider>
   );
 }
 
