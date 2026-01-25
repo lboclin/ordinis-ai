@@ -5,6 +5,7 @@ from services.gemini import process_message
 from services.sheets import save_entry as save_to_sheets
 from services.db import get_user_from_token, save_expense, save_appointment, get_expenses, get_appointments
 import os
+import uvicorn
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -113,3 +114,6 @@ def get_agenda_data(user = Depends(get_current_user)):
     except Exception as e:
         print(f"Error fetching agenda data: {e}")
         return []
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
