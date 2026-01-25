@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 gspread
-google-generativeai
+google-genai
 pydantic
 python-dotenv
 supabase

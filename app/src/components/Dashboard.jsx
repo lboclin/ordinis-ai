@@ -105,7 +105,7 @@ const Dashboard = ({ onMenuClick }) => {
             <p>Carregando...</p>
         ) : chartData.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 bg-[#40414F] rounded-xl">
-                 <p className="text-gray-400">Nenhum gasto registrado para {formattedMonth}.</p>
+                 <p className="text-gray-400">Nenhum dado encontrado para este mês.</p>
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
