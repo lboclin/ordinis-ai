@@ -26,13 +26,19 @@ def save_expense(user_id: str, data: dict):
     if not supabase:
         return False
     try:
-        response = supabase.table("expenses").insert({
+        # Map Gemini JSON keys to DB columns
+        # JSON: { "tipo": "despesa", "descricao": "...", "valor": float, "categoria": "...", "data_hora": "ISO" }
+        # DB: category, amount, date, description
+
+        db_payload = {
             "user_id": user_id,
             "category": data.get("categoria"),
             "amount": data.get("valor"),
-            "date": data.get("data"),
-            "description": data.get("descricao", "") # Optional description
-        }).execute()
+            "date": data.get("data_hora"), # DB date/timestamp column usually handles ISO strings
+            "description": data.get("descricao", "")
+        }
+
+        response = supabase.table("expenses").insert(db_payload).execute()
         return True
     except Exception as e:
         print(f"Error saving expense: {e}")
@@ -42,12 +48,18 @@ def save_appointment(user_id: str, data: dict):
     if not supabase:
         return False
     try:
-        response = supabase.table("appointments").insert({
+        # Map Gemini JSON keys to DB columns
+        # JSON: { "tipo": "compromisso", "descricao": "Title/Desc", "data_hora": "ISO" }
+        # DB: title, date, description
+
+        db_payload = {
             "user_id": user_id,
-            "title": data.get("categoria"), # Using category as title for now
-            "date": data.get("data"), # Timestamptz might need ISO format with time
-            "description": data.get("descricao", "")
-        }).execute()
+            "title": data.get("descricao"),
+            "date": data.get("data_hora"),
+            "description": "" # Optional extra description if needed
+        }
+
+        response = supabase.table("appointments").insert(db_payload).execute()
         return True
     except Exception as e:
         print(f"Error saving appointment: {e}")

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Menu } from 'lucide-react';
+import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
 
@@ -9,6 +9,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 const Dashboard = ({ onMenuClick }) => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,9 +31,19 @@ const Dashboard = ({ onMenuClick }) => {
     fetchData();
   }, []);
 
-  // Process data for charts
+  // Filter expenses by selected month
+  const filteredExpenses = expenses.filter(item => {
+      if (!item.date) return false;
+      const itemDate = new Date(item.date);
+      return (
+          itemDate.getMonth() === selectedMonth.getMonth() &&
+          itemDate.getFullYear() === selectedMonth.getFullYear()
+      );
+  });
+
+  // Process data for charts based on filtered expenses
   const categoryMap = {};
-  expenses.forEach(item => {
+  filteredExpenses.forEach(item => {
       const cat = item.category || 'Outros';
       const val = parseFloat(item.amount) || 0;
       categoryMap[cat] = (categoryMap[cat] || 0) + val;
@@ -41,8 +52,26 @@ const Dashboard = ({ onMenuClick }) => {
   const chartData = Object.keys(categoryMap).map(key => ({
       name: key,
       value: categoryMap[key],
-      valor: categoryMap[key] // For BarChart consistency with previous mock
+      valor: categoryMap[key]
   }));
+
+  const handlePrevMonth = () => {
+      setSelectedMonth(prev => {
+          const newDate = new Date(prev);
+          newDate.setMonth(prev.getMonth() - 1);
+          return newDate;
+      });
+  };
+
+  const handleNextMonth = () => {
+      setSelectedMonth(prev => {
+          const newDate = new Date(prev);
+          newDate.setMonth(prev.getMonth() + 1);
+          return newDate;
+      });
+  };
+
+  const formattedMonth = selectedMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
   return (
     <div className="flex flex-1 flex-col h-full bg-chatgpt-main text-white overflow-y-auto">
@@ -57,12 +86,27 @@ const Dashboard = ({ onMenuClick }) => {
       </div>
 
       <div className="p-6 md:p-8 space-y-8">
-        <h2 className="text-2xl font-bold">Gastos do Mês</h2>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+             <h2 className="text-2xl font-bold">Gastos do Mês</h2>
+
+             {/* Month Selector */}
+             <div className="flex items-center gap-4 bg-[#40414F] px-4 py-2 rounded-lg shadow-md">
+                 <button onClick={handlePrevMonth} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                     <ChevronLeft size={20} />
+                 </button>
+                 <span className="capitalize font-medium min-w-[150px] text-center">{formattedMonth}</span>
+                 <button onClick={handleNextMonth} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                     <ChevronRight size={20} />
+                 </button>
+             </div>
+        </div>
 
         {loading ? (
             <p>Carregando...</p>
         ) : chartData.length === 0 ? (
-            <p className="text-gray-400">Nenhum gasto registrado ainda.</p>
+            <div className="flex flex-col items-center justify-center py-10 bg-[#40414F] rounded-xl">
+                 <p className="text-gray-400">Nenhum gasto registrado para {formattedMonth}.</p>
+            </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Bar Chart */}

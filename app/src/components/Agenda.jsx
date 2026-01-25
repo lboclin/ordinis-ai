@@ -37,6 +37,26 @@ const Agenda = ({ onMenuClick }) => {
       return appDate.toDateString() === value.toDateString();
   });
 
+  // Function to determine if a date has appointments
+  const tileContent = ({ date, view }) => {
+      if (view === 'month') {
+          const hasAppointment = appointments.some(app => {
+              if (!app.date) return false;
+              const appDate = new Date(app.date);
+              return appDate.toDateString() === date.toDateString();
+          });
+
+          if (hasAppointment) {
+              return (
+                  <div className="flex justify-center mt-1">
+                      <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                  </div>
+              );
+          }
+      }
+      return null;
+  };
+
   return (
     <div className="flex flex-1 flex-col h-full bg-chatgpt-main text-white relative">
         <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-chatgpt-main border-b border-white/10">
@@ -51,7 +71,12 @@ const Agenda = ({ onMenuClick }) => {
         <div className="p-8 flex flex-col items-center overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">Minha Agenda</h2>
             <div className="bg-[#40414F] p-4 rounded-xl shadow-lg text-black mb-8">
-                <Calendar onChange={onChange} value={value} className="rounded-lg border-none" />
+                <Calendar
+                    onChange={onChange}
+                    value={value}
+                    className="rounded-lg border-none"
+                    tileContent={tileContent}
+                />
             </div>
 
             <div className="w-full max-w-md bg-[#40414F] p-6 rounded-xl shadow-lg">
@@ -62,12 +87,19 @@ const Agenda = ({ onMenuClick }) => {
                     <p className="text-gray-400">Nenhum compromisso para este dia.</p>
                 ) : (
                     <ul className="space-y-3">
-                        {selectedDateAppointments.map((app, index) => (
-                            <li key={app.id || index} className="p-3 bg-black/20 rounded-lg">
-                                <p className="font-medium text-white">{app.title}</p>
-                                {app.description && <p className="text-sm text-gray-400">{app.description}</p>}
-                            </li>
-                        ))}
+                        {selectedDateAppointments.map((app, index) => {
+                             const appDate = new Date(app.date);
+                             const timeStr = appDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                             return (
+                                <li key={app.id || index} className="p-3 bg-black/20 rounded-lg">
+                                    <div className="flex justify-between items-start">
+                                        <p className="font-medium text-white">{app.title}</p>
+                                        <span className="text-sm text-blue-300 bg-blue-900/30 px-2 py-0.5 rounded">{timeStr}</span>
+                                    </div>
+                                    {app.description && <p className="text-sm text-gray-400 mt-1">{app.description}</p>}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>
