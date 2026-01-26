@@ -64,9 +64,9 @@ def process_message(text: str) -> dict:
     """
 
     try:
-        # Usa o modelo flash 1.5 para maior estabilidade de cota
+        # Usa o modelo flash 2.0 para maior estabilidade de cota
         response = client.models.generate_content(
-            model='gemini-1.5-flash', 
+            model='gemini-2.0-flash',
             contents=prompt,
             config={
                 'response_mime_type': 'application/json'
