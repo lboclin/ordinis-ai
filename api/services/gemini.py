@@ -64,23 +64,41 @@ def process_message(text: str) -> dict:
     """
 
     try:
+        # Usa o modelo flash 1.5 para maior estabilidade de cota
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-1.5-flash', 
             contents=prompt,
             config={
                 'response_mime_type': 'application/json'
             }
         )
         content = response.text
-        # Ensure it's clean JSON
+        # Limpeza preventiva de markdown
         content = content.replace("```json", "").replace("```", "").strip()
         data = json.loads(content)
         return data
+
     except Exception as e:
-        print(f"Error processing with Gemini: {e}")
+        error_str = str(e)
+        print(f"Error processing with Gemini: {error_str}")
+        
+        # Tratamento específico para Cota Excedida (429 / ResourceExhausted)
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            return {
+                "type": "expense",  # Classifica como despesa para exibir o card de erro
+                "data": {
+                    "category": "Erro de Cota",
+                    "amount": 0.0,
+                    "description": "A IA está sobrecarregada, tente em 1 min",
+                    "date": None,
+                    "tags": ["erro", "sistema"]
+                }
+            }
+            
+        # Fallback genérico
         return {
             "type": "error",
             "data": {
-                "description": "Erro de processamento",
+                "description": "Erro interno de processamento",
             }
         }
