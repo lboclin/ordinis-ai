@@ -8,6 +8,7 @@ import os
 import uvicorn
 from datetime import datetime
 from dotenv import load_dotenv
+from supabase import create_client, ClientOptions
 
 load_dotenv()
 
@@ -46,7 +47,7 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/chat")
-def chat_endpoint(request: ChatRequest, user = Depends(get_current_user)):
+def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user = Depends(get_current_user)):
     """
     Receives a user message, processes it with Gemini, and saves to DB.
     """
@@ -58,13 +59,49 @@ def chat_endpoint(request: ChatRequest, user = Depends(get_current_user)):
         msg_type = structured_response.get("type")
         data_payload = structured_response.get("data", {})
 
-        # 2. Save to DB
+        # 2. Save to DB (Refactored for RLS)
         saved_db = False
 
-        if msg_type == "expense":
-            saved_db = save_expense(user.id, data_payload)
-        elif msg_type == "appointment":
-            saved_db = save_appointment(user.id, data_payload)
+        # Initialize authenticated Supabase client
+        if authorization:
+            token = authorization.replace("Bearer ", "")
+            url: str = os.environ.get("SUPABASE_URL")
+            key: str = os.environ.get("SUPABASE_KEY")
+
+            try:
+                # Create a client instance with the user's JWT
+                supabase = create_client(
+                    url,
+                    key,
+                    options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+                )
+
+                if msg_type == "expense":
+                    db_payload = {
+                        "user_id": user.id,
+                        "category": data_payload.get("category"),
+                        "amount": data_payload.get("amount"),
+                        "date": data_payload.get("date"),
+                        "description": data_payload.get("description"),
+                        "tags": data_payload.get("tags", [])
+                    }
+                    supabase.table("expenses").insert(db_payload).execute()
+                    saved_db = True
+
+                elif msg_type == "appointment":
+                    # Note: New prompt returns ISO date in 'date' field
+                    db_payload = {
+                        "user_id": user.id,
+                        "title": data_payload.get("title"),
+                        "date": data_payload.get("date"),
+                        "description": data_payload.get("description")
+                    }
+                    supabase.table("appointments").insert(db_payload).execute()
+                    saved_db = True
+
+            except Exception as db_err:
+                print(f"Database Error: {db_err}")
+                saved_db = False
 
         # 3. Construct Friendly Response
         response_message = ""
@@ -77,21 +114,20 @@ def chat_endpoint(request: ChatRequest, user = Depends(get_current_user)):
                 cat = data_payload.get('category', 'geral')
                 response_message = f"✅ Gasto de R$ {val} em {cat} anotado!"
             else:
-                 # "📅 [descrição] marcado para [data] às [hora]"
-                 date_str = data_payload.get('date', '')
-                 time_str = data_payload.get('time', '')
-                 desc = data_payload.get('description', 'Compromisso')
+                 # "📅 [descrição] marcado para [data]" (Novo prompt retorna ISO)
+                 title = data_payload.get('title', 'Compromisso')
+                 date_iso = data_payload.get('date', '')
 
+                 fmt_date = date_iso
                  try:
-                     dt = datetime.strptime(date_str, "%Y-%m-%d")
-                     fmt_date = dt.strftime("%d/%m/%Y")
+                     dt = datetime.fromisoformat(date_iso)
+                     fmt_date = dt.strftime("%d/%m/%Y às %H:%M")
                  except:
-                     fmt_date = date_str
+                     pass
 
-                 time_display = f" às {time_str}" if time_str else ""
-
-                 response_message = f"📅 {desc} marcado para {fmt_date}{time_display}."
+                 response_message = f"📅 {title} marcado para {fmt_date}."
         else:
+             # Fallback if DB save failed or other type
              response_message = f"Entendi que é um {msg_type}, mas tive um erro ao salvar no banco de dados."
 
         return {

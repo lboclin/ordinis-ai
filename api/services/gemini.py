@@ -37,24 +37,35 @@ def process_message(text: str) -> dict:
     Atue como um assistente pessoal financeiro e de agenda para o Ordinis AI.
     Sua tarefa é analisar a mensagem do usuário e extrair dados estruturados em JSON.
 
-    REGRAS DE CATEGORIZAÇÃO (Mapeamento Inteligente):
-    - Gasolina, Uber, Ônibus, Metrô -> "Transporte"
-    - Remédio, Farmácia, Médico, Dentista -> "Saúde"
-    - Restaurante, Supermercado, Lanche, Bar, Ifood -> "Alimentação"
-    - Academia, Boxe, Suplementos, Natação -> "Bem-estar/Esporte"
-    - Aluguel, Luz, Água, Internet, Condomínio -> "Moradia"
-    - Se não encaixar em nenhuma, use "Outros" ou crie uma categoria curta e descritiva (1 palavra).
+    REGRAS DE CLASSIFICAÇÃO:
+    - Se a mensagem for sobre um pagamento, compra ou custo -> "expense"
+    - Se a mensagem for sobre um compromisso, reunião, visita ou evento agendado -> "appointment"
+
+    REGRA CRÍTICA DE DESEMPATE:
+    - "Dentista dia 28" (ou médico/serviço com data futura e SEM valor explícito) -> "appointment"
+    - "Paguei o dentista" (com ou sem valor) -> "expense"
 
     FORMATO DA RESPOSTA (JSON APENAS):
+
+    1. Para DESPESAS (expense):
     {{
-      "type": "expense" | "appointment",
+      "type": "expense",
       "data": {{
-        "description": string (descrição clara do item ou título do compromisso),
-        "amount": float (apenas se for expense, senão null),
-        "category": string (use o mapeamento inteligente acima),
-        "date": "YYYY-MM-DD" (se o ano não for informado, use o atual: {datetime.now().year}),
-        "time": "HH:mm" (se disponível, senão null),
-        "tags": [string] (palavras-chave relevantes)
+        "category": "Transporte" | "Alimentação" | "Saúde" | "Lazer" | "Casa" | "Outros",
+        "amount": float,
+        "description": string,
+        "date": "YYYY-MM-DD" (se ano não informado, use {datetime.now().year}),
+        "tags": [string]
+      }}
+    }}
+
+    2. Para COMPROMISSOS (appointment):
+    {{
+      "type": "appointment",
+      "data": {{
+        "title": string,
+        "date": "YYYY-MM-DDTHH:MM:SS" (Se hora não informada, assuma 09:00:00),
+        "description": string
       }}
     }}
 
