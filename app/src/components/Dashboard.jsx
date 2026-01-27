@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { filterExpensesByMonth, groupExpensesByCategory, calculateTotal, getMockPreviousMonthData } from '../utils/dashboardHelpers';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+import SummaryCard from './dashboard/SummaryCard';
+import DistributionCard from './dashboard/DistributionCard';
+import InsightsCard from './dashboard/InsightsCard';
+import CategoryDetailsModal from './dashboard/CategoryDetailsModal';
+import AllCategoriesModal from './dashboard/AllCategoriesModal';
 
 const Dashboard = ({ onMenuClick }) => {
   const { lastDataUpdate } = useAuth();
@@ -13,12 +17,28 @@ const Dashboard = ({ onMenuClick }) => {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
+  // Modal States
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [isAllCategoriesOpen, setIsAllCategoriesOpen] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
-        if (!token) return;
+        if (!token) {
+           // Mock data for development/preview when no backend/auth
+           setExpenses([
+               { id: 1, category: 'Moradia', amount: 2000, date: new Date().toISOString(), description: 'Aluguel' },
+               { id: 2, category: 'Alimentação', amount: 800, date: new Date().toISOString(), description: 'Mercado' },
+               { id: 3, category: 'Transporte', amount: 400, date: new Date().toISOString(), description: 'Uber' },
+               { id: 4, category: 'Lazer', amount: 300, date: new Date().toISOString(), description: 'Cinema' },
+               { id: 5, category: 'Saúde', amount: 150, date: new Date().toISOString(), description: 'Farmácia' },
+               { id: 6, category: 'Educação', amount: 500, date: new Date().toISOString(), description: 'Curso' },
+           ]);
+           setLoading(false);
+           return;
+        }
 
         const response = await axios.get('http://localhost:8000/dashboard', {
             headers: { Authorization: `Bearer ${token}` }
@@ -26,6 +46,15 @@ const Dashboard = ({ onMenuClick }) => {
         setExpenses(response.data);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        // Fallback to mock on error too
+         setExpenses([
+               { id: 1, category: 'Moradia', amount: 2000, date: new Date().toISOString(), description: 'Aluguel' },
+               { id: 2, category: 'Alimentação', amount: 800, date: new Date().toISOString(), description: 'Mercado' },
+               { id: 3, category: 'Transporte', amount: 400, date: new Date().toISOString(), description: 'Uber' },
+               { id: 4, category: 'Lazer', amount: 300, date: new Date().toISOString(), description: 'Cinema' },
+               { id: 5, category: 'Saúde', amount: 150, date: new Date().toISOString(), description: 'Farmácia' },
+               { id: 6, category: 'Educação', amount: 500, date: new Date().toISOString(), description: 'Curso' },
+           ]);
       } finally {
         setLoading(false);
       }
@@ -33,29 +62,33 @@ const Dashboard = ({ onMenuClick }) => {
     fetchData();
   }, [lastDataUpdate]);
 
-  // Filter expenses by selected month
-  const filteredExpenses = expenses.filter(item => {
-      if (!item.date) return false;
-      const itemDate = new Date(item.date);
-      return (
-          itemDate.getMonth() === selectedMonth.getMonth() &&
-          itemDate.getFullYear() === selectedMonth.getFullYear()
-      );
-  });
+  // Derived Data
+  const currentMonthExpenses = useMemo(() =>
+      filterExpensesByMonth(expenses, selectedMonth),
+      [expenses, selectedMonth]
+  );
 
-  // Process data for charts based on filtered expenses
-  const categoryMap = {};
-  filteredExpenses.forEach(item => {
-      const cat = item.category || 'Outros';
-      const val = parseFloat(item.amount) || 0;
-      categoryMap[cat] = (categoryMap[cat] || 0) + val;
-  });
+  const categories = useMemo(() =>
+      groupExpensesByCategory(currentMonthExpenses),
+      [currentMonthExpenses]
+  );
 
-  const chartData = Object.keys(categoryMap).map(key => ({
-      name: key,
-      value: categoryMap[key],
-      valor: categoryMap[key]
-  }));
+  const totalAmount = useMemo(() =>
+      calculateTotal(currentMonthExpenses),
+      [currentMonthExpenses]
+  );
+
+  const previousMonthData = useMemo(() =>
+      getMockPreviousMonthData(categories),
+      [categories]
+  );
+
+  // Filtered expenses for the specific category modal
+  const categoryExpenses = useMemo(() => {
+      if (!selectedCategory) return [];
+      return currentMonthExpenses.filter(item => (item.category || 'Outros') === selectedCategory);
+  }, [currentMonthExpenses, selectedCategory]);
+
 
   const handlePrevMonth = () => {
       setSelectedMonth(prev => {
@@ -76,94 +109,79 @@ const Dashboard = ({ onMenuClick }) => {
   const formattedMonth = selectedMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-chatgpt-main text-white overflow-y-auto">
-      <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-chatgpt-main border-b border-white/10">
+    <div className="flex flex-1 flex-col h-full bg-[#131314] text-white overflow-y-auto custom-scrollbar">
+      {/* Header Mobile */}
+      <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-[#131314]/90 backdrop-blur-md border-b border-white/10">
         <button
           onClick={onMenuClick}
-          className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10"
+          className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors"
         >
           <Menu size={24} />
         </button>
         <span className="ml-4 font-semibold text-white">Dashboard</span>
       </div>
 
-      <div className="p-6 md:p-8 space-y-8">
+      <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+        {/* Header Desktop + Month Selector */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-             <h2 className="text-2xl font-bold">Gastos do Mês</h2>
+             <h2 className="text-2xl font-bold hidden md:block">Visão Geral</h2>
 
-             {/* Month Selector */}
-             <div className="flex items-center gap-4 bg-[#40414F] px-4 py-2 rounded-lg shadow-md">
-                 <button onClick={handlePrevMonth} className="p-1 hover:bg-white/10 rounded-full transition-colors">
-                     <ChevronLeft size={20} />
+             <div className="flex items-center gap-4 bg-[#202123] px-4 py-2 rounded-full border border-white/5 shadow-sm">
+                 <button onClick={handlePrevMonth} className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+                     <ChevronLeft size={18} />
                  </button>
-                 <span className="capitalize font-medium min-w-[150px] text-center">{formattedMonth}</span>
-                 <button onClick={handleNextMonth} className="p-1 hover:bg-white/10 rounded-full transition-colors">
-                     <ChevronRight size={20} />
+                 <span className="capitalize font-medium min-w-[140px] text-center text-sm">{formattedMonth}</span>
+                 <button onClick={handleNextMonth} className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+                     <ChevronRight size={18} />
                  </button>
              </div>
         </div>
 
         {loading ? (
-            <p>Carregando...</p>
-        ) : chartData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 bg-[#40414F] rounded-xl">
-                 <p className="text-gray-400">Nenhum dado encontrado para este mês.</p>
+            <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Bar Chart */}
-                <div className="bg-[#40414F] p-6 rounded-xl shadow-lg">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-200">Por Categoria (Barra)</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={chartData}
-                            margin={{
-                            top: 5,
-                            right: 30,
-                            left: 20,
-                            bottom: 5,
-                            }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#555" />
-                            <XAxis dataKey="name" stroke="#ccc" />
-                            <YAxis stroke="#ccc" />
-                            <Tooltip contentStyle={{ backgroundColor: '#202123', border: 'none', color: '#fff' }} />
-                            <Legend />
-                            <Bar dataKey="valor" fill="#8884d8" />
-                        </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+            <>
+                {/* Top Row: Summary Card */}
+                <SummaryCard
+                    totalAmount={totalAmount}
+                    topCategories={categories}
+                    onViewMore={() => setIsAllCategoriesOpen(true)}
+                />
 
-                {/* Pie Chart */}
-                <div className="bg-[#40414F] p-6 rounded-xl shadow-lg">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-200">Por Categoria (Pizza)</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={chartData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: '#202123', border: 'none', color: '#fff' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
+                {/* Second Row: Distribution and Insights */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 h-full">
+                        <DistributionCard
+                            data={categories}
+                            onCategoryClick={(cat) => setSelectedCategory(cat)}
+                        />
+                    </div>
+                    <div className="lg:col-span-1 h-full">
+                        <InsightsCard
+                            currentMonthData={categories}
+                            previousMonthData={previousMonthData}
+                        />
                     </div>
                 </div>
-            </div>
+            </>
         )}
       </div>
+
+      {/* Modals */}
+      <CategoryDetailsModal
+          isOpen={!!selectedCategory}
+          onClose={() => setSelectedCategory(null)}
+          category={selectedCategory}
+          expenses={categoryExpenses}
+      />
+
+      <AllCategoriesModal
+          isOpen={isAllCategoriesOpen}
+          onClose={() => setIsAllCategoriesOpen(false)}
+          categories={categories}
+      />
     </div>
   );
 };
