@@ -5,6 +5,8 @@ import ChatInterface from './components/ChatInterface';
 import Agenda from './components/Agenda';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 
 const AuthenticatedApp = () => {
   const { user } = useAuth();
@@ -23,6 +25,10 @@ const AuthenticatedApp = () => {
         return <Agenda onMenuClick={() => setSidebarOpen(true)} />;
       case 'dashboard':
         return <Dashboard onMenuClick={() => setSidebarOpen(true)} />;
+      case 'profile':
+        return <Profile onMenuClick={() => setSidebarOpen(true)} />;
+      case 'settings':
+        return <Settings onMenuClick={() => setSidebarOpen(true)} />;
       default:
         return (
           <div className="flex flex-1 flex-col h-full bg-chatgpt-main text-white items-center justify-center">

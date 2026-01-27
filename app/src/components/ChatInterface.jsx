@@ -49,6 +49,12 @@ const ChatInterface = ({ onMenuClick }) => {
           }
       });
 
+      // Strict Error Handling Check
+      // Axios throws on 4xx/5xx by default, but we check just in case configuration changes
+      if (response.status !== 200) {
+          throw new Error("Request failed with status " + response.status);
+      }
+
       const aiMessage = {
         id: Date.now() + 1,
         role: 'assistant',
@@ -64,8 +70,14 @@ const ChatInterface = ({ onMenuClick }) => {
       console.error("Error communicating with backend:", error);
 
       if (error.response?.status === 429) {
-          toast.error("Sistema sobrecarregado. Aguarde 1 minuto.");
-          // Don't add error message to chat history
+          toast.error(error.response.data.detail || "Sistema sobrecarregado. Aguarde 1 minuto.");
+          // CRITICAL: STOP here. Do not add fake message.
+          setIsLoading(false);
+          return;
+      } else if (error.response?.status === 401) {
+          toast.error("Sessão expirada. Faça login novamente.");
+          // Optionally trigger logout logic here if context allows,
+          // but for now we rely on global handling or user action.
       } else {
           const errorMessage = {
             id: Date.now() + 1,
