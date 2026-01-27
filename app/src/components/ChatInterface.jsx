@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Menu } from 'lucide-react';
 import { clsx } from 'clsx';
 import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -61,12 +62,18 @@ const ChatInterface = ({ onMenuClick }) => {
 
     } catch (error) {
       console.error("Error communicating with backend:", error);
-      const errorMessage = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: 'Desculpe, não consegui conectar ao servidor ou você não está logado.'
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+
+      if (error.response?.status === 429) {
+          toast.error("Sistema sobrecarregado. Aguarde 1 minuto.");
+          // Don't add error message to chat history
+      } else {
+          const errorMessage = {
+            id: Date.now() + 1,
+            role: 'assistant',
+            content: 'Desculpe, não consegui conectar ao servidor ou você não está logado.'
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +81,7 @@ const ChatInterface = ({ onMenuClick }) => {
 
   return (
     <div className="flex flex-1 flex-col h-full relative bg-chatgpt-main">
+      <Toaster position="top-center" />
       {/* Top Bar (Mobile Hamburger) */}
       <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-chatgpt-main border-b border-white/10">
         <button
