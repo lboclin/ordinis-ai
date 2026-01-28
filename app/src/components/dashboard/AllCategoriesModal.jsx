@@ -2,8 +2,15 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { formatCurrency } from '../../utils/dashboardHelpers';
 
-const AllCategoriesModal = ({ isOpen, onClose, categories }) => {
+const AllCategoriesModal = ({ isOpen, onClose, categories, onCategoryClick }) => {
   if (!isOpen) return null;
+
+  const handleCategoryClick = (catName) => {
+    if (onCategoryClick) {
+      onCategoryClick(catName);
+      onClose(); // Close this modal so the details modal can be seen
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -16,7 +23,11 @@ const AllCategoriesModal = ({ isOpen, onClose, categories }) => {
         </div>
         <div className="overflow-y-auto p-4 space-y-3 custom-scrollbar">
             {categories.map((cat, idx) => (
-              <div key={idx} className="flex justify-between items-center p-3 bg-[#2E2F38] rounded-lg border border-transparent hover:border-white/5 transition-all">
+              <div
+                key={idx}
+                onClick={() => handleCategoryClick(cat.name)}
+                className="flex justify-between items-center p-3 bg-[#2E2F38] rounded-lg border border-transparent hover:border-white/20 hover:bg-[#343541] transition-all cursor-pointer"
+              >
                 <span className="text-sm font-medium text-white">{cat.name}</span>
                 <span className="font-semibold text-white">{formatCurrency(cat.value)}</span>
               </div>

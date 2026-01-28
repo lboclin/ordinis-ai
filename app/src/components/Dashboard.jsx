@@ -182,6 +182,7 @@ const Dashboard = ({ onMenuClick }) => {
           isOpen={isAllCategoriesOpen}
           onClose={() => setIsAllCategoriesOpen(false)}
           categories={categories}
+          onCategoryClick={(cat) => setSelectedCategory(cat)}
       />
     </div>
   );
