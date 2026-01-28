@@ -8,6 +8,6 @@
   }
 
   body {
-    @apply bg-[#0f0f0f] text-gray-100 antialiased;
+    @apply bg-[#131314] text-gray-100 antialiased;
   }
 }

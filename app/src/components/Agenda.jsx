@@ -42,9 +42,9 @@ const Agenda = ({ onMenuClick }) => {
   });
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-[#0f0f0f] text-white relative overflow-hidden">
+    <div className="flex flex-1 flex-col h-full bg-[#131314] text-white relative overflow-hidden">
         {/* Header Mobile */}
-        <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-[#0f0f0f]/90 backdrop-blur-md border-b border-white/10">
+        <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-[#131314]/90 backdrop-blur-md border-b border-white/10">
             <button
             onClick={onMenuClick}
             className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10"
@@ -100,7 +100,7 @@ const Agenda = ({ onMenuClick }) => {
 
                     {/* New Appointment Button - Footer Position */}
                     <div className="flex justify-center mt-2 pb-8">
-                        <button className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-6 py-3 rounded-xl transition-all text-sm font-medium border border-transparent hover:border-zinc-600">
+                        <button className="flex items-center gap-2 bg-[#202123] hover:bg-[#2A2B32] text-zinc-400 hover:text-white px-6 py-3 rounded-xl transition-all text-sm font-medium border border-transparent hover:border-zinc-600">
                             <Plus size={18} />
                             Novo Compromisso
                         </button>

@@ -92,10 +92,10 @@ const ChatInterface = ({ onMenuClick }) => {
   };
 
   return (
-    <div className="flex flex-1 flex-col h-full relative bg-chatgpt-main">
+    <div className="flex flex-1 flex-col h-full relative bg-[#131314]">
       <Toaster position="top-center" />
       {/* Top Bar (Mobile Hamburger) */}
-      <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-chatgpt-main border-b border-white/10">
+      <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-[#131314] border-b border-white/10">
         <button
           onClick={onMenuClick}
           className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10"
@@ -117,7 +117,7 @@ const ChatInterface = ({ onMenuClick }) => {
                 "max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3",
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-br-none'
-                  : 'bg-[#444654] text-gray-100 rounded-bl-none border border-black/10'
+                  : 'bg-[#202123] text-gray-100 rounded-bl-none border border-white/5'
               )}
             >
               <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">
@@ -128,7 +128,7 @@ const ChatInterface = ({ onMenuClick }) => {
         ))}
         {isLoading && (
            <div className="flex justify-start">
-             <div className="bg-[#444654] text-gray-100 rounded-2xl rounded-bl-none border border-black/10 px-4 py-3">
+             <div className="bg-[#202123] text-gray-100 rounded-2xl rounded-bl-none border border-white/5 px-4 py-3">
                <p className="animate-pulse">Digitando...</p>
              </div>
            </div>
@@ -137,7 +137,7 @@ const ChatInterface = ({ onMenuClick }) => {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-chatgpt-main border-t border-white/10">
+      <div className="p-4 bg-[#131314] border-t border-white/10">
         <form onSubmit={handleSend} className="max-w-3xl mx-auto relative flex items-center gap-2">
           <div className="relative flex-1">
             <input
@@ -145,7 +145,7 @@ const ChatInterface = ({ onMenuClick }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Digite uma mensagem..."
-              className="w-full bg-[#40414F] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-black/10 shadow-sm disabled:opacity-50"
+              className="w-full bg-[#202123] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-white/5 shadow-sm disabled:opacity-50"
               disabled={isLoading}
             />
             <button

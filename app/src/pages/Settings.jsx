@@ -144,9 +144,9 @@ const Settings = ({ onMenuClick }) => {
   };
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-[#0f0f0f] text-white overflow-hidden">
+    <div className="flex flex-1 flex-col h-full bg-[#131314] text-white overflow-hidden">
       {/* Mobile Header */}
-      <div className="flex items-center p-4 md:hidden bg-[#0f0f0f]/90 backdrop-blur-md border-b border-white/10 sticky top-0 z-30">
+      <div className="flex items-center p-4 md:hidden bg-[#131314]/90 backdrop-blur-md border-b border-white/10 sticky top-0 z-30">
         <button
           onClick={onMenuClick}
           className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10"
@@ -161,7 +161,7 @@ const Settings = ({ onMenuClick }) => {
             <h2 className="text-2xl font-bold mb-6 hidden md:block">Configurações</h2>
 
             {/* CARD 1: CONTA */}
-            <div className="bg-[#1c1c1c] rounded-xl border border-white/5 overflow-hidden">
+            <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
                     <User className="text-blue-400" size={20} />
                     <h3 className="font-semibold">Conta</h3>
@@ -210,7 +210,7 @@ const Settings = ({ onMenuClick }) => {
             </div>
 
             {/* CARD 2: CATEGORIAS */}
-            <div className="bg-[#1c1c1c] rounded-xl border border-white/5 overflow-hidden">
+            <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
                     <Grid className="text-emerald-400" size={20} />
                     <h3 className="font-semibold">Categorias</h3>
@@ -269,7 +269,7 @@ const Settings = ({ onMenuClick }) => {
             </div>
 
             {/* CARD 3: INTEGRAÇÕES */}
-            <div className="bg-[#1c1c1c] rounded-xl border border-white/5 overflow-hidden opacity-75">
+            <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden opacity-75">
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
                     <FileSpreadsheet className="text-green-400" size={20} />
                     <div className="flex items-center gap-3">

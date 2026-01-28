@@ -6,7 +6,7 @@ const HistoryItem = ({ item }) => {
   const isExpense = item.type === 'expense';
 
   return (
-    <div className="flex items-center justify-between p-4 bg-[#1a1a1a] border border-white/5 rounded-xl hover:bg-[#252525] transition-colors group">
+    <div className="flex items-center justify-between p-4 bg-[#202123] border border-white/5 rounded-xl hover:bg-[#2A2B32] transition-colors group">
       <div className="flex items-center gap-4">
         {/* Icon Badge */}
         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${

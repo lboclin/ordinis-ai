@@ -69,9 +69,9 @@ const History = ({ onMenuClick }) => {
   const groupKeys = Object.keys(groupedItems);
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-[#0f0f0f] text-white relative overflow-hidden">
+    <div className="flex flex-1 flex-col h-full bg-[#131314] text-white relative overflow-hidden">
         {/* Header Mobile */}
-        <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-[#0f0f0f]/90 backdrop-blur-md border-b border-white/10">
+        <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-[#131314]/90 backdrop-blur-md border-b border-white/10">
             <button
             onClick={onMenuClick}
             className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10"

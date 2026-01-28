@@ -39,7 +39,7 @@ const AuthenticatedApp = () => {
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#0f0f0f] text-gray-100 font-sans antialiased selection:bg-blue-500/30">
+    <div className="flex h-full w-full overflow-hidden bg-[#131314] text-gray-100 font-sans antialiased selection:bg-blue-500/30">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

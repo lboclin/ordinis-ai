@@ -40,7 +40,7 @@ const WeekNavigator = ({ currentDate, onDateSelect, appointments }) => {
                 flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px] py-3 rounded-xl transition-all duration-200
                 ${isSelected
                     ? 'bg-blue-600 text-white shadow-lg scale-105'
-                    : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#252525] hover:text-gray-200'}
+                    : 'bg-[#202123] text-gray-400 hover:bg-[#2A2B32] hover:text-gray-200'}
                 ${isToday && !isSelected ? 'border border-blue-500/30' : 'border border-transparent'}
               `}
             >
