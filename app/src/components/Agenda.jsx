@@ -55,16 +55,11 @@ const Agenda = ({ onMenuClick }) => {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center p-4 md:p-8">
-            <div className="w-full max-w-4xl flex flex-col items-center">
+            <div className="w-full flex flex-col items-center">
 
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row items-center justify-between w-full mb-8 gap-4">
+                <div className="flex flex-col md:flex-row items-center justify-between w-full mb-8 gap-4 max-w-5xl">
                     <h2 className="text-2xl font-bold hidden md:block">Minha Agenda</h2>
-                    <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors shadow-lg shadow-blue-900/20 text-sm font-medium">
-                        <Plus size={18} />
-                        <span className="hidden sm:inline">Novo Compromisso</span>
-                        <span className="sm:hidden">Novo</span>
-                    </button>
                 </div>
 
                 {/* Week Navigator */}
@@ -84,12 +79,12 @@ const Agenda = ({ onMenuClick }) => {
                         className="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center gap-1.5 transition-colors"
                     >
                         <CalendarIcon size={16} />
-                        Ver Mês
+                        Abrir calendário
                     </button>
                 </div>
 
                 {/* Appointments List */}
-                <div className="w-full">
+                <div className="w-full max-w-3xl flex flex-col gap-6">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -102,6 +97,14 @@ const Agenda = ({ onMenuClick }) => {
                             onDelete={handleDelete}
                         />
                     )}
+
+                    {/* New Appointment Button - Footer Position */}
+                    <div className="flex justify-center mt-2 pb-8">
+                        <button className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-6 py-3 rounded-xl transition-all text-sm font-medium border border-transparent hover:border-zinc-600">
+                            <Plus size={18} />
+                            Novo Compromisso
+                        </button>
+                    </div>
                 </div>
 
             </div>

@@ -21,12 +21,12 @@ const WeekNavigator = ({ currentDate, onDateSelect, appointments }) => {
     <div className="flex items-center justify-between w-full max-w-3xl mx-auto mb-6">
       <button
         onClick={handlePrevDay}
-        className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+        className="p-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors flex-shrink-0"
       >
         <ChevronLeft size={24} />
       </button>
 
-      <div className="flex gap-2 md:gap-4 overflow-x-auto no-scrollbar px-2 w-full justify-center">
+      <div className="flex gap-2 md:gap-4 overflow-hidden px-2 w-full justify-center">
         {weekDates.map((date, idx) => {
           const isSelected = isSameDay(date, currentDate);
           const isToday = isSameDay(date, new Date());
@@ -37,9 +37,9 @@ const WeekNavigator = ({ currentDate, onDateSelect, appointments }) => {
               key={idx}
               onClick={() => onDateSelect(date)}
               className={`
-                flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px] py-3 rounded-full transition-all duration-200
+                flex flex-col items-center justify-center min-w-[50px] md:min-w-[60px] py-3 rounded-xl transition-all duration-200
                 ${isSelected
-                    ? 'bg-blue-600 text-white shadow-lg scale-110'
+                    ? 'bg-blue-600 text-white shadow-lg scale-105'
                     : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#252525] hover:text-gray-200'}
                 ${isToday && !isSelected ? 'border border-blue-500/30' : 'border border-transparent'}
               `}
