@@ -5,7 +5,7 @@ import ChatInterface from './components/ChatInterface';
 import Agenda from './components/Agenda';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
-import Profile from './pages/Profile';
+import History from './pages/History';
 import Settings from './pages/Settings';
 
 const AuthenticatedApp = () => {
@@ -25,8 +25,8 @@ const AuthenticatedApp = () => {
         return <Agenda onMenuClick={() => setSidebarOpen(true)} />;
       case 'dashboard':
         return <Dashboard onMenuClick={() => setSidebarOpen(true)} />;
-      case 'profile':
-        return <Profile onMenuClick={() => setSidebarOpen(true)} />;
+      case 'history':
+        return <History onMenuClick={() => setSidebarOpen(true)} />;
       case 'settings':
         return <Settings onMenuClick={() => setSidebarOpen(true)} />;
       default:
