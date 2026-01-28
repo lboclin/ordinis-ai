@@ -1,130 +1,293 @@
 import React, { useState, useEffect } from 'react';
+import {
+  LogOut,
+  Trash2,
+  Plus,
+  Menu,
+  User,
+  Lock,
+  ShieldCheck,
+  Grid,
+  FileSpreadsheet,
+  Loader2
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { Settings as SettingsIcon, LogOut, Save, Loader2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+
+// Predefined colors for new categories
+const CATEGORY_COLORS = [
+  '#ef4444', // red
+  '#f97316', // orange
+  '#f59e0b', // amber
+  '#10b981', // emerald
+  '#06b6d4', // cyan
+  '#3b82f6', // blue
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#6b7280', // gray
+];
 
 const Settings = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [monthlyBudget, setMonthlyBudget] = useState('');
+  const [loadingLogout, setLoadingLogout] = useState(false);
+
+  // Categories State
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
+
+  // Account State
+  const email = user?.email;
+  // Check provider (google vs email)
+  const isGoogle = user?.app_metadata?.provider === 'google' ||
+                   user?.identities?.some(id => id.provider === 'google');
 
   useEffect(() => {
-    if (user) {
-      getSettings();
-    }
-  }, [user]);
+    fetchCategories();
+  }, []);
 
-  const getSettings = async () => {
+  const fetchCategories = async () => {
     try {
-      setLoading(true);
+      if (!supabase) return; // Fallback if no client
       const { data, error } = await supabase
-        .from('profiles')
-        .select('monthly_budget')
-        .eq('id', user.id)
-        .single();
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: true });
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        setMonthlyBudget(data.monthly_budget || '');
-      }
+      if (error) throw error;
+      setCategories(data || []);
     } catch (error) {
-      console.error('Error fetching settings:', error);
-      // Silent error or minimal toast
+      console.error('Error fetching categories:', error);
+      // Don't toast error on mount to avoid annoyance if table doesn't exist yet
     } finally {
-      setLoading(false);
+      setLoadingCategories(false);
     }
   };
 
-  const updateSettings = async (e) => {
+  const handleAddCategory = async (e) => {
     e.preventDefault();
+    if (!newCategoryName.trim()) return;
 
     try {
-      setLoading(true);
-      const updates = {
-        id: user.id,
-        monthly_budget: parseFloat(monthlyBudget) || 0,
-        updated_at: new Date(),
-      };
+      setAddingCategory(true);
+      const randomColor = CATEGORY_COLORS[Math.floor(Math.random() * CATEGORY_COLORS.length)];
 
-      const { error } = await supabase.from('profiles').upsert(updates);
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([
+          {
+            user_id: user.id,
+            name: newCategoryName.trim(),
+            color: randomColor,
+            is_default: false
+          }
+        ])
+        .select()
+        .single();
 
-      if (error) {
-        throw error;
-      }
-      toast.success('Configurações salvas!');
+      if (error) throw error;
+
+      setCategories([...categories, data]);
+      setNewCategoryName('');
+      toast.success('Categoria adicionada!');
     } catch (error) {
-      toast.error('Erro ao salvar configurações');
-      console.error(error);
+      console.error('Error adding category:', error);
+      toast.error('Erro ao adicionar categoria.');
     } finally {
-      setLoading(false);
+      setAddingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id); // RLS redundancy check
+
+      if (error) throw error;
+
+      setCategories(categories.filter(c => c.id !== id));
+      toast.success('Categoria removida.');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Erro ao remover categoria.');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/reset-password', // or simple logic
+        });
+        if (error) throw error;
+        toast.success(`Email de redefinição enviado para ${email}`);
+    } catch (error) {
+        toast.error('Erro ao solicitar redefinição.');
+        console.error(error);
     }
   };
 
   const handleLogout = async () => {
-      try {
-          await logout();
-          toast.success("Saiu com sucesso");
-      } catch (error) {
-          console.error("Logout failed", error);
-      }
-  }
+    try {
+        setLoadingLogout(true);
+        await logout();
+        // Redirect handled by AuthContext/App
+    } catch (error) {
+        toast.error('Erro ao sair.');
+    } finally {
+        setLoadingLogout(false);
+    }
+  };
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-chatgpt-main text-gray-100 overflow-y-auto">
+    <div className="flex flex-1 flex-col h-full bg-[#0f0f0f] text-white overflow-hidden">
       {/* Mobile Header */}
-      <div className="md:hidden p-4 border-b border-white/10 flex items-center gap-4">
-        <button onClick={onMenuClick} className="text-gray-300">
-          <SettingsIcon size={24} />
+      <div className="flex items-center p-4 md:hidden bg-[#0f0f0f]/90 backdrop-blur-md border-b border-white/10 sticky top-0 z-30">
+        <button
+          onClick={onMenuClick}
+          className="text-gray-300 hover:text-white p-1 rounded-md hover:bg-white/10"
+        >
+          <Menu size={24} />
         </button>
-        <h1 className="text-xl font-bold">Configurações</h1>
+        <span className="ml-4 font-semibold text-white">Configurações</span>
       </div>
 
-      <div className="p-6 md:p-12 max-w-2xl mx-auto w-full">
-        <h2 className="text-3xl font-bold mb-8 hidden md:block">Configurações</h2>
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+            <h2 className="text-2xl font-bold mb-6 hidden md:block">Configurações</h2>
 
-        <div className="bg-[#444654] p-8 rounded-xl border border-white/10 shadow-lg space-y-8">
+            {/* CARD 1: CONTA */}
+            <div className="bg-[#1c1c1c] rounded-xl border border-white/5 overflow-hidden">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
+                    <User className="text-blue-400" size={20} />
+                    <h3 className="font-semibold">Conta</h3>
+                </div>
+                <div className="p-6 space-y-6">
+                    <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">E-mail</label>
+                        <p className="text-lg text-gray-200 mt-1">{email}</p>
+                    </div>
 
-          <form onSubmit={updateSettings} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Meta de Gastos Mensal (R$)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={monthlyBudget}
-                onChange={(e) => setMonthlyBudget(e.target.value)}
-                className="w-full bg-[#343541] border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="Ex: 2000.00"
-              />
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-black/20 rounded-lg border border-white/5">
+                        <div className="flex items-center gap-3">
+                            <Lock size={18} className="text-gray-400" />
+                            <span className="text-gray-300 font-medium">Senha</span>
+                        </div>
+
+                        {isGoogle ? (
+                             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
+                                <ShieldCheck size={14} />
+                                <span>Conectado via Google Account</span>
+                             </div>
+                        ) : (
+                            <div className="flex items-center gap-4">
+                                <span className="text-gray-500 text-sm tracking-widest">●●●●●●●●</span>
+                                <button
+                                    onClick={handleResetPassword}
+                                    className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+                                >
+                                    Alterar Senha
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="pt-2">
+                        <button
+                            onClick={handleLogout}
+                            disabled={loadingLogout}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg transition-colors text-sm font-medium"
+                        >
+                            <LogOut size={16} />
+                            {loadingLogout ? 'Saindo...' : 'Desconectar da conta'}
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-[#19c37d] hover:bg-[#1a885d] text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-              Salvar Meta
-            </button>
-          </form>
+            {/* CARD 2: CATEGORIAS */}
+            <div className="bg-[#1c1c1c] rounded-xl border border-white/5 overflow-hidden">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
+                    <Grid className="text-emerald-400" size={20} />
+                    <h3 className="font-semibold">Categorias</h3>
+                </div>
+                <div className="p-6">
+                    <p className="text-sm text-gray-400 mb-4">Gerencie as categorias de despesas.</p>
 
-          <hr className="border-white/10" />
+                    {/* List */}
+                    <div className="space-y-2 mb-6 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                        {loadingCategories ? (
+                            <div className="flex items-center justify-center py-8 text-gray-500">
+                                <Loader2 className="animate-spin mr-2" size={16} /> Carregando...
+                            </div>
+                        ) : categories.length === 0 ? (
+                            <p className="text-center py-4 text-gray-500 text-sm italic">Nenhuma categoria encontrada.</p>
+                        ) : (
+                            categories.map((cat) => (
+                                <div key={cat.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 group hover:border-white/10 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-3 h-3 rounded-full"
+                                            style={{ backgroundColor: cat.color || '#6b7280' }}
+                                        />
+                                        <span className="text-gray-200">{cat.name}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteCategory(cat.id)}
+                                        className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1"
+                                        title="Remover"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
 
-          <div>
-            <h3 className="text-lg font-medium text-red-400 mb-4">Zona de Perigo</h3>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/50 font-medium py-3 rounded-lg transition-colors"
-            >
-              <LogOut size={20} />
-              Sair da Conta
-            </button>
-          </div>
+                    {/* Add New */}
+                    <form onSubmit={handleAddCategory} className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="Nova categoria..."
+                            className="flex-1 bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                        />
+                        <button
+                            type="submit"
+                            disabled={addingCategory || !newCategoryName.trim()}
+                            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                            {addingCategory ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {/* CARD 3: INTEGRAÇÕES */}
+            <div className="bg-[#1c1c1c] rounded-xl border border-white/5 overflow-hidden opacity-75">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
+                    <FileSpreadsheet className="text-green-400" size={20} />
+                    <div className="flex items-center gap-3">
+                        <h3 className="font-semibold">Planilhas Google</h3>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-gray-400 uppercase tracking-wide">
+                            Em Breve
+                        </span>
+                    </div>
+                </div>
+                <div className="p-6">
+                    <p className="text-sm text-gray-400 mb-4">
+                        Sincronize automaticamente seus gastos e apontamentos com uma planilha do Google Sheets.
+                    </p>
+                    <button disabled className="px-4 py-2 bg-white/5 text-gray-500 rounded-lg text-sm font-medium border border-white/5 cursor-not-allowed w-full md:w-auto">
+                        Conectar Planilha
+                    </button>
+                </div>
+            </div>
 
         </div>
       </div>

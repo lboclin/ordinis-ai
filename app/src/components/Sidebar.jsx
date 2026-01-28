@@ -11,7 +11,6 @@ const Sidebar = ({ isOpen, onClose, onNavigate, currentView }) => {
     { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
     { icon: Calendar, label: 'Agenda', id: 'agenda' },
     { icon: History, label: 'Histórico', id: 'history' },
-    { icon: User, label: 'Perfil', id: 'profile' },
     { icon: Settings, label: 'Configurações', id: 'settings' },
   ];
 
