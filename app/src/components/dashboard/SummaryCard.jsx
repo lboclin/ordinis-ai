@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../../utils/dashboardHelpers';
 
-const SummaryCard = ({ totalAmount, topCategories, onViewMore }) => {
+const SummaryCard = ({ totalAmount, topCategories, onViewMore, onCategoryClick }) => {
   return (
     <div className="bg-[#202123] rounded-xl p-6 border border-white/5 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all hover:border-white/10">
       <div className="flex flex-col gap-2">
@@ -15,7 +15,11 @@ const SummaryCard = ({ totalAmount, topCategories, onViewMore }) => {
       <div className="flex flex-col w-full md:w-auto min-w-[240px] gap-3 bg-[#2E2F38]/30 p-4 rounded-lg border border-white/5">
         {topCategories.length === 0 && <span className="text-gray-500 text-sm">Sem dados.</span>}
         {topCategories.slice(0, 4).map((cat, idx) => (
-           <div key={idx} className="flex justify-between items-center text-sm border-b border-white/5 pb-2 last:border-0 last:pb-0">
+           <div
+             key={idx}
+             onClick={() => onCategoryClick && onCategoryClick(cat.name)}
+             className="flex justify-between items-center text-sm border-b border-white/5 pb-2 last:border-0 last:pb-0 cursor-pointer hover:bg-white/5 transition-colors rounded px-1 -mx-1"
+           >
              <span className="text-gray-300 font-medium truncate max-w-[120px]">{cat.name}</span>
              <span className="font-semibold text-white">{formatCurrency(cat.value)}</span>
            </div>

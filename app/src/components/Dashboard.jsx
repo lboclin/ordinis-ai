@@ -148,6 +148,7 @@ const Dashboard = ({ onMenuClick }) => {
                     totalAmount={totalAmount}
                     topCategories={categories}
                     onViewMore={() => setIsAllCategoriesOpen(true)}
+                    onCategoryClick={(cat) => setSelectedCategory(cat)}
                 />
 
                 {/* Second Row: Distribution and Insights */}
