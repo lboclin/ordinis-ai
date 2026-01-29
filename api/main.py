@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, UploadFile, File
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from services.openai_service import process_message
+from services.openai_service import process_message, transcribe_audio
 from services.sheets import save_entry as save_to_sheets
 from services.db import get_user_from_token, save_expense, save_appointment, get_expenses, get_appointments, supabase
 import os
@@ -80,6 +80,31 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.post("/transcribe")
+async def transcribe_endpoint(file: UploadFile = File(...), authorization: str = Header(None), user = Depends(get_current_user)):
+    """
+    Receives an audio file, transcribes it using Whisper, and returns the text.
+    """
+    try:
+        # Read the file content
+        file_content = await file.read()
+
+        # We need to pass a tuple (filename, file_content, content_type) to OpenAI client
+        # or a file-like object. The service expects just 'file' which it passes to client.audio.transcriptions.create.
+        # The openai client handles (filename, bytes) tuple.
+
+        # To be safe and compatible with how OpenAI client expects file uploads from memory:
+        # It usually expects a tuple ("filename", bytes, "content_type") or a file-like object.
+        # UploadFile has .file which is a SpooledTemporaryFile (file-like).
+        # But since we did await file.read(), the cursor is at the end.
+        # Let's seek back or just pass the bytes with a name.
+
+        text = await transcribe_audio((file.filename, file_content, file.content_type))
+        return {"text": text}
+    except Exception as e:
+        print(f"Transcription Error: {e}")
+        raise HTTPException(status_code=500, detail="Erro na transcrição de áudio")
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user = Depends(get_current_user)):

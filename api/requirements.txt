@@ -7,3 +7,4 @@ python-dotenv
 supabase
 PyJWT
 openai
+python-multipart

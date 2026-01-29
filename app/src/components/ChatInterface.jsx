@@ -14,7 +14,11 @@ const ChatInterface = ({ onMenuClick }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCooldown, setIsCooldown] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const messagesEndRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const timerIntervalRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -24,6 +28,136 @@ const ChatInterface = ({ onMenuClick }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Audio Recording Logic
+  const startRecording = async () => {
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+          const chunks = [];
+
+          mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) chunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+              const audioBlob = new Blob(chunks, { type: 'audio/webm' }); // Use webm for compatibility
+              handleTranscribe(audioBlob);
+
+              // Clean up stream
+              stream.getTracks().forEach(track => track.stop());
+          };
+
+          mediaRecorder.start();
+          setIsRecording(true);
+          setRecordingTime(0);
+
+          timerIntervalRef.current = setInterval(() => {
+              setRecordingTime(prev => {
+                  if (prev >= 6) { // Stop at 7s (0-6 passed, next tick is 7)
+                      stopRecording();
+                      return 7;
+                  }
+                  return prev + 1;
+              });
+          }, 1000);
+
+      } catch (err) {
+          console.error("Error accessing microphone:", err);
+          toast.error("Erro ao acessar microfone.");
+      }
+  };
+
+  const stopRecording = () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+          clearInterval(timerIntervalRef.current);
+      }
+  };
+
+  const handleTranscribe = async (audioBlob) => {
+      setIsLoading(true);
+      try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+          if (!token) throw new Error("No auth token");
+
+          const formData = new FormData();
+          formData.append('file', audioBlob, 'voice_message.webm');
+
+          const response = await axios.post('http://localhost:8000/transcribe', formData, {
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'multipart/form-data'
+              }
+          });
+
+          if (response.data.text) {
+              setInput(response.data.text);
+              // Auto-send logic needs to be careful with state updates.
+              // We call internal logic directly to ensure state is fresh.
+              await sendMessageInternal(response.data.text);
+          }
+      } catch (error) {
+          console.error("Transcription error:", error);
+          toast.error("Erro ao transcrever áudio.");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
+  const sendMessageInternal = async (msgContent) => {
+      if (!msgContent.trim()) return;
+      if (isLoading || isCooldown) return;
+
+      const userMessage = { id: Date.now(), role: 'user', content: msgContent };
+      setMessages((prev) => [...prev, userMessage]);
+      setInput('');
+      setIsLoading(true);
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) throw new Error("No auth token");
+
+        const response = await axios.post('http://localhost:8000/chat', {
+          message: userMessage.content
+        }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.status !== 200) throw new Error("Request failed");
+
+        const aiMessage = {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: response.data.response
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+
+        if (response.data.saved) triggerDataUpdate();
+
+      } catch (error) {
+          console.error("Error communicating with backend:", error);
+          if (error.response?.status === 429) {
+              toast.error("IA em pausa. Tente novamente mais tarde.");
+              setIsCooldown(true);
+              setTimeout(() => setIsCooldown(false), 60000);
+          } else if (error.response?.status === 401) {
+              toast.error("Sessão expirada. Faça login novamente.");
+          } else {
+              setMessages((prev) => [...prev, {
+                id: Date.now() + 1,
+                role: 'assistant',
+                content: 'Desculpe, não consegui conectar ao servidor.'
+              }]);
+          }
+      } finally {
+          setIsLoading(false);
+      }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -41,70 +175,8 @@ const ChatInterface = ({ onMenuClick }) => {
         toast.error("IA em pausa. Aguarde alguns instantes.");
         return;
     }
-    if (!input.trim()) return;
 
-    const userMessage = { id: Date.now(), role: 'user', content: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      if (!token) {
-          throw new Error("No auth token");
-      }
-
-      // Assuming backend is running on localhost:8000
-      const response = await axios.post('http://localhost:8000/chat', {
-        message: userMessage.content
-      }, {
-          headers: {
-              Authorization: `Bearer ${token}`
-          }
-      });
-
-      // Strict Error Handling Check
-      if (response.status !== 200) {
-          throw new Error("Request failed with status " + response.status);
-      }
-
-      const aiMessage = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: response.data.response
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-
-      if (response.data.saved) {
-          triggerDataUpdate();
-      }
-
-    } catch (error) {
-      console.error("Error communicating with backend:", error);
-
-      if (error.response?.status === 429) {
-          toast.error("IA em pausa. Tente novamente mais tarde.");
-          setIsCooldown(true);
-          // Set cooldown timer for 60 seconds
-          setTimeout(() => setIsCooldown(false), 60000);
-
-          setIsLoading(false);
-          return;
-      } else if (error.response?.status === 401) {
-          toast.error("Sessão expirada. Faça login novamente.");
-      } else {
-          const errorMessage = {
-            id: Date.now() + 1,
-            role: 'assistant',
-            content: 'Desculpe, não consegui conectar ao servidor ou você não está logado.'
-          };
-          setMessages((prev) => [...prev, errorMessage]);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessageInternal(input);
   };
 
   return (
@@ -169,9 +241,22 @@ const ChatInterface = ({ onMenuClick }) => {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 rounded-md hover:bg-black/20 transition-colors"
+              onClick={isRecording ? stopRecording : startRecording}
+              className={clsx(
+                  "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all",
+                  isRecording
+                      ? "text-red-500 bg-red-500/10 animate-pulse hover:bg-red-500/20"
+                      : "text-gray-400 hover:text-white hover:bg-white/10"
+              )}
             >
-              <Mic size={20} />
+              {isRecording ? (
+                  <div className="flex items-center gap-1 font-mono text-xs font-bold px-1">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      {7 - recordingTime}s
+                  </div>
+              ) : (
+                  <Mic size={20} />
+              )}
             </button>
           </div>
           <button

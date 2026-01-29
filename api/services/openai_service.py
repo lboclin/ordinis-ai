@@ -58,7 +58,7 @@ async def process_message(text: str, categories: list[str]) -> dict:
 
     REGRA DE CAUTELA (APPOINTMENT):
     - Se o usuário mencionar um compromisso mas NÃO especificar o horário (hora/minuto), NÃO gere o JSON de "appointment".
-    - Em vez disso, retorne um JSON do tipo "response" perguntando: "Qual seria o horário do compromisso?".
+    - Em vez disso, retorne um JSON do tipo "response" perguntando: "Poderia repetir a mensagem citando o horário do compromisso?".
 
     FORMATO DA RESPOSTA (JSON APENAS):
 
@@ -91,4 +91,23 @@ async def process_message(text: str, categories: list[str]) -> dict:
     except Exception as e:
         error_str = str(e)
         print(f"Error processing with OpenAI: {error_str}")
+        raise e
+
+async def transcribe_audio(file) -> str:
+    """
+    Transcribes audio file using OpenAI Whisper model.
+    """
+    if not client:
+        raise Exception("OpenAI client not initialized")
+
+    try:
+        # Create a transcription
+        transcription = await client.audio.transcriptions.create(
+            model="whisper-1",
+            file=file,
+            response_format="text"
+        )
+        return transcription
+    except Exception as e:
+        print(f"Error transcribing audio: {e}")
         raise e
