@@ -236,8 +236,8 @@ def get_expenses_data(authorization: str = Header(None), user = Depends(get_curr
         return response.data
     except Exception as e:
         print(f"Error fetching expenses data: {e}")
-        # Fallback to service key if client fails? No, enforce RLS.
-        raise HTTPException(status_code=500, detail="Erro ao buscar despesas")
+        # Return empty list on error instead of 404/500 to prevent frontend crash
+        return []
 
 # Nova rota solicitada: /appointments
 @app.get("/appointments")
@@ -258,7 +258,8 @@ def get_appointments_data(authorization: str = Header(None), user = Depends(get_
         return response.data
     except Exception as e:
         print(f"Error fetching appointments data: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao buscar compromissos")
+        # Return empty list on error instead of 404/500 to prevent frontend crash
+        return []
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

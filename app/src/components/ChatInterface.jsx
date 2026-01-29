@@ -13,6 +13,7 @@ const ChatInterface = ({ onMenuClick }) => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCooldown, setIsCooldown] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -26,8 +27,21 @@ const ChatInterface = ({ onMenuClick }) => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    // Anti-spam protection: Prevent sending if empty or already loading
-    if (!input.trim() || isLoading) return;
+
+    // Explicit Debug Log
+    console.log(" [CHAT DEBUG] Botão clicado. Iniciando envio...");
+
+    // Anti-spam & Cooldown protection
+    if (isLoading) {
+        console.warn(" [CHAT DEBUG] Bloqueado: Já existe um envio em andamento.");
+        return;
+    }
+    if (isCooldown) {
+        console.warn(" [CHAT DEBUG] Bloqueado: Em cooldown.");
+        toast.error("IA em pausa. Aguarde alguns instantes.");
+        return;
+    }
+    if (!input.trim()) return;
 
     const userMessage = { id: Date.now(), role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -71,8 +85,11 @@ const ChatInterface = ({ onMenuClick }) => {
       console.error("Error communicating with backend:", error);
 
       if (error.response?.status === 429) {
-          toast.error(error.response.data.detail || "Sistema sobrecarregado. Aguarde 1 minuto.");
-          // CRITICAL: Stop here to prevent loop or fake success
+          toast.error("IA em pausa. Tente novamente mais tarde.");
+          setIsCooldown(true);
+          // Set cooldown timer for 60 seconds
+          setTimeout(() => setIsCooldown(false), 60000);
+
           setIsLoading(false);
           return;
       } else if (error.response?.status === 401) {
@@ -143,9 +160,12 @@ const ChatInterface = ({ onMenuClick }) => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Digite uma mensagem..."
-              className="w-full bg-[#202123] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-white/5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
+              placeholder={isCooldown ? "Aguarde um momento..." : "Digite uma mensagem..."}
+              className={clsx(
+                  "w-full bg-[#202123] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-white/5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                  isCooldown && "border-red-500/50 text-red-200"
+              )}
+              disabled={isLoading || isCooldown}
             />
             <button
               type="button"
@@ -156,7 +176,7 @@ const ChatInterface = ({ onMenuClick }) => {
           </div>
           <button
             type="submit"
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || isCooldown}
             className="bg-[#19c37d] hover:bg-[#1a885d] text-white p-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send size={20} />
