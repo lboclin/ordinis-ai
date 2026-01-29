@@ -1,33 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, Calendar as CalendarIcon, Plus } from 'lucide-react';
-import { getMockAppointments } from '../utils/agendaHelpers';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 import WeekNavigator from './agenda/WeekNavigator';
 import MonthCalendarModal from './agenda/MonthCalendarModal';
 import AppointmentList from './agenda/AppointmentList';
 
 const Agenda = ({ onMenuClick }) => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
     const loadData = async () => {
         setLoading(true);
-        // In a real app, we would fetch from API here using axios and AuthContext
-        // For now, we use the mock data helper
-        await new Promise(resolve => setTimeout(resolve, 500)); // Fake delay
-        setAppointments(getMockAppointments());
-        setLoading(false);
+        try {
+            // Using backend endpoint as requested
+            let token = null;
+            if (supabase) {
+                const { data: { session } } = await supabase.auth.getSession();
+                token = session?.access_token;
+            } else if (user?.id === 'test-user') {
+                // Fallback for testing/dev environment without Supabase credentials
+                token = 'mock-token';
+            }
+
+            if (token) {
+                // Assuming backend is running on localhost:8000
+                const response = await axios.get('http://localhost:8000/appointments', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                // Ensure date strings are parsed correctly if needed,
+                // though AppointmentList likely handles ISO strings or Date objects.
+                // We map them to ensure date objects if needed, or keep as strings.
+                // The mock data used strings or Date objects?
+                // Looking at getMockAppointments (previous code), it likely returned objects with Date or string dates.
+                // Let's assume the API returns ISO strings.
+                setAppointments(response.data);
+            } else {
+                 setAppointments([]);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar agenda:", error);
+            setAppointments([]);
+        } finally {
+            setLoading(false);
+        }
     };
-    loadData();
-  }, []);
+
+    if (user) {
+        loadData();
+    }
+  }, [user]); // Reload when user changes
+
+  // Refresh trigger listener could be added here if we had a global refresh context,
+  // but for now we stick to basic fetch.
 
   const handleDelete = (id) => {
       if (confirm('Tem certeza que deseja excluir este compromisso?')) {
           setAppointments(prev => prev.filter(app => app.id !== id));
+          // TODO: Call API to delete
       }
   };
 

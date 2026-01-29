@@ -19,6 +19,7 @@ const ChatInterface = ({ onMenuClick }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Only scroll to bottom when messages change. No API calls here.
   useEffect(() => {
     scrollToBottom();
   }, [messages]);

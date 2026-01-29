@@ -217,5 +217,48 @@ def get_agenda_data(user = Depends(get_current_user)):
         print(f"Error fetching agenda data: {e}")
         return []
 
+# Nova rota solicitada: /expenses
+@app.get("/expenses")
+def get_expenses_data(authorization: str = Header(None), user = Depends(get_current_user)):
+    try:
+        # Use User Token for RLS
+        token = authorization.replace("Bearer ", "")
+        url: str = os.environ.get("SUPABASE_URL")
+        key: str = os.environ.get("SUPABASE_KEY")
+
+        supabase_client = create_client(
+            url,
+            key,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+
+        response = supabase_client.table("expenses").select("*").execute()
+        return response.data
+    except Exception as e:
+        print(f"Error fetching expenses data: {e}")
+        # Fallback to service key if client fails? No, enforce RLS.
+        raise HTTPException(status_code=500, detail="Erro ao buscar despesas")
+
+# Nova rota solicitada: /appointments
+@app.get("/appointments")
+def get_appointments_data(authorization: str = Header(None), user = Depends(get_current_user)):
+    try:
+        # Use User Token for RLS
+        token = authorization.replace("Bearer ", "")
+        url: str = os.environ.get("SUPABASE_URL")
+        key: str = os.environ.get("SUPABASE_KEY")
+
+        supabase_client = create_client(
+            url,
+            key,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+
+        response = supabase_client.table("appointments").select("*").execute()
+        return response.data
+    except Exception as e:
+        print(f"Error fetching appointments data: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao buscar compromissos")
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
