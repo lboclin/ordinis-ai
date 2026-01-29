@@ -8,6 +8,11 @@ load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+if GEMINI_API_KEY:
+    print(f" [DEBUG KEY] Usando chave: {GEMINI_API_KEY[:5]}...{GEMINI_API_KEY[-5:]}")
+else:
+    print(" [DEBUG KEY] Chave não encontrada.")
+
 client = None
 try:
     if GEMINI_API_KEY:
