@@ -3,7 +3,6 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { X } from 'lucide-react';
 import { isSameDay } from '../../utils/agendaHelpers';
-import '../../App.css'; // Ensure we have access to global styles if needed, though we'll inject custom styles here.
 
 const MonthCalendarModal = ({ isOpen, onClose, onDateSelect, selectedDate, appointments }) => {
   if (!isOpen) return null;

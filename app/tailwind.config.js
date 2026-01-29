@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
@@ -12,7 +11,6 @@ export default {
           sidebar: '#202123',
           main: '#343541',
         },
-        // Keep existing gray scale if needed, or rely on defaults
         gray: {
           50: '#f9fafb',
           100: '#f3f4f6',
