@@ -80,9 +80,19 @@ export const getMockAppointments = () => {
 };
 
 export const getAppointmentsForDate = (appointments, date) => {
-  return appointments.filter(app => {
-      if (!app.date) return false;
-      const appDate = new Date(app.date);
-      return isSameDay(appDate, date);
-  }).sort((a, b) => a.time.localeCompare(b.time));
+  return appointments
+    .filter(app => {
+        if (!app.date) return false;
+        const appDate = new Date(app.date);
+        return isSameDay(appDate, date);
+    })
+    .map(app => {
+        if (!app.time && app.date) {
+            const d = new Date(app.date);
+            const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            return { ...app, time: timeStr };
+        }
+        return app;
+    })
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 };

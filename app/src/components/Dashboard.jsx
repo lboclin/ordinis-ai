@@ -40,7 +40,7 @@ const Dashboard = ({ onMenuClick }) => {
            return;
         }
 
-        const response = await axios.get('http://localhost:8000/dashboard', {
+        const response = await axios.get('http://localhost:8000/expenses', {
             headers: { Authorization: `Bearer ${token}` }
         });
         setExpenses(response.data);
