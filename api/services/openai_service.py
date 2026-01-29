@@ -51,6 +51,7 @@ async def process_message(text: str, categories: list[str]) -> dict:
     REGRAS DE CLASSIFICAÇÃO:
     - Se a mensagem for sobre um pagamento, compra ou custo -> "expense"
     - Se a mensagem for sobre um compromisso, reunião, visita ou evento agendado -> "appointment"
+    - Se o usuário pedir para cancelar a ação anterior (ex: "cancelar", "desfazer", "apagar último") -> "cancellation"
 
     REGRA CRÍTICA DE DESEMPATE:
     - "Dentista dia 28" (ou médico/serviço com data futura e SEM valor explícito) -> "appointment"
@@ -64,6 +65,7 @@ async def process_message(text: str, categories: list[str]) -> dict:
 
     - Expense: {{ "type": "expense", "category": "String (uma das válidas)", "amount": Float, "description": "String", "date": "ISO String (ou null para hoje)" }}
     - Appointment: {{ "type": "appointment", "title": "String", "date": "ISO String (Data e Hora futura)", "description": "String" }}
+    - Cancellation: {{ "type": "cancellation" }}
     - Response: {{ "type": "response", "message": "String (pergunta de esclarecimento)" }}
 
     Hoje é: {current_time}

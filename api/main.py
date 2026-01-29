@@ -184,6 +184,47 @@ async def chat_endpoint(request: ChatRequest, authorization: str = Header(None),
                 supabase_client.table("appointments").insert(db_payload).execute()
                 saved_db = True
 
+            elif msg_type == "cancellation":
+                # 1. Fetch last expense
+                last_exp = supabase_client.table("expenses").select("id, amount, created_at").order("created_at", desc=True).limit(1).execute()
+                exp_data = last_exp.data[0] if last_exp.data else None
+
+                # 2. Fetch last appointment
+                last_appt = supabase_client.table("appointments").select("id, title, created_at").order("created_at", desc=True).limit(1).execute()
+                appt_data = last_appt.data[0] if last_appt.data else None
+
+                target = None
+                table = ""
+                desc_text = ""
+
+                # 3. Compare dates
+                if exp_data and appt_data:
+                    if exp_data["created_at"] > appt_data["created_at"]:
+                        target = exp_data
+                        table = "expenses"
+                        desc_text = f"R$ {target.get('amount', 0)}"
+                    else:
+                        target = appt_data
+                        table = "appointments"
+                        desc_text = f"Evento {target.get('title', 'Sem título')}"
+                elif exp_data:
+                    target = exp_data
+                    table = "expenses"
+                    desc_text = f"R$ {target.get('amount', 0)}"
+                elif appt_data:
+                    target = appt_data
+                    table = "appointments"
+                    desc_text = f"Evento {target.get('title', 'Sem título')}"
+
+                # 4. Delete
+                if target:
+                    supabase_client.table(table).delete().eq("id", target["id"]).execute()
+                    structured_response["message"] = f"✅ Ação desfeita! O último registro ({desc_text}) foi removido."
+                    saved_db = True
+                else:
+                    structured_response["message"] = "⚠️ Não encontrei nenhum registro recente para cancelar."
+                    saved_db = True
+
         except Exception as db_err:
             print(f"Database Error: {db_err}")
             saved_db = False
@@ -195,6 +236,8 @@ async def chat_endpoint(request: ChatRequest, authorization: str = Header(None),
     elif msg_type == "response":
             # Direct response from LLM (e.g. asking for clarification)
             response_message = structured_response.get("message", "Preciso de mais detalhes.")
+    elif msg_type == "cancellation":
+            response_message = structured_response.get("message", "Ação de cancelamento processada.")
     elif saved_db:
         if msg_type == "expense":
             # "✅ Gasto de R$ [valor] em [categoria] anotado!"
