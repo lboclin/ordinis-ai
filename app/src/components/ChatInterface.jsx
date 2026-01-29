@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Menu } from 'lucide-react';
+import { Send, Mic, Menu, Square } from 'lucide-react';
 import { clsx } from 'clsx';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -15,6 +15,7 @@ const ChatInterface = ({ onMenuClick }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCooldown, setIsCooldown] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const messagesEndRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -73,12 +74,13 @@ const ChatInterface = ({ onMenuClick }) => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
           setIsRecording(false);
+          setRecordingTime(0);
           clearInterval(timerIntervalRef.current);
       }
   };
 
   const handleTranscribe = async (audioBlob) => {
-      setIsLoading(true);
+      setIsTranscribing(true);
       try {
           const { data: { session } } = await supabase.auth.getSession();
           const token = session?.access_token;
@@ -96,15 +98,13 @@ const ChatInterface = ({ onMenuClick }) => {
 
           if (response.data.text) {
               setInput(response.data.text);
-              // Auto-send logic needs to be careful with state updates.
-              // We call internal logic directly to ensure state is fresh.
               await sendMessageInternal(response.data.text);
           }
       } catch (error) {
           console.error("Transcription error:", error);
           toast.error("Erro ao transcrever áudio.");
       } finally {
-          setIsLoading(false);
+          setIsTranscribing(false);
       }
   };
 
@@ -162,11 +162,16 @@ const ChatInterface = ({ onMenuClick }) => {
   const handleSend = async (e) => {
     e.preventDefault();
 
+    if (isRecording) {
+        stopRecording();
+        return;
+    }
+
     // Explicit Debug Log
     console.log(" [CHAT DEBUG] Botão clicado. Iniciando envio...");
 
     // Anti-spam & Cooldown protection
-    if (isLoading) {
+    if (isLoading || isTranscribing) {
         console.warn(" [CHAT DEBUG] Bloqueado: Já existe um envio em andamento.");
         return;
     }
@@ -232,16 +237,23 @@ const ChatInterface = ({ onMenuClick }) => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isCooldown ? "Aguarde um momento..." : "Digite uma mensagem..."}
+              placeholder={
+                  isCooldown ? "Aguarde um momento..." :
+                  isTranscribing ? "🎧 Processando áudio..." :
+                  isRecording ? "Gravando áudio..." :
+                  "Digite uma mensagem..."
+              }
               className={clsx(
                   "w-full bg-[#202123] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-white/5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
-                  isCooldown && "border-red-500/50 text-red-200"
+                  isCooldown && "border-red-500/50 text-red-200",
+                  isTranscribing && "animate-pulse"
               )}
-              disabled={isLoading || isCooldown}
+              disabled={isLoading || isCooldown || isTranscribing || isRecording}
             />
             <button
               type="button"
               onClick={isRecording ? stopRecording : startRecording}
+              disabled={isLoading || isCooldown || isTranscribing}
               className={clsx(
                   "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all",
                   isRecording
@@ -261,10 +273,15 @@ const ChatInterface = ({ onMenuClick }) => {
           </div>
           <button
             type="submit"
-            disabled={!input.trim() || isLoading || isCooldown}
-            className="bg-[#19c37d] hover:bg-[#1a885d] text-white p-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={(!input.trim() && !isRecording) || isLoading || isCooldown || isTranscribing}
+            className={clsx(
+                "p-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                isRecording
+                    ? "bg-red-500 hover:bg-red-600 text-white"
+                    : "bg-[#19c37d] hover:bg-[#1a885d] text-white"
+            )}
           >
-            <Send size={20} />
+            {isRecording ? <Square size={20} fill="currentColor" /> : <Send size={20} />}
           </button>
         </form>
         <div className="text-center mt-2">
