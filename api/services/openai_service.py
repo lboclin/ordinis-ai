@@ -1,33 +1,33 @@
 import os
 import json
-from google import genai
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from datetime import datetime
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-if GEMINI_API_KEY:
-    print(f" [DEBUG KEY] Usando chave: {GEMINI_API_KEY[:5]}...{GEMINI_API_KEY[-5:]}")
+if OPENAI_API_KEY:
+    print(f" [DEBUG KEY] Usando chave OpenAI: {OPENAI_API_KEY[:5]}...{OPENAI_API_KEY[-5:]}")
 else:
-    print(" [DEBUG KEY] Chave não encontrada.")
+    print(" [DEBUG KEY] Chave OpenAI não encontrada.")
 
 client = None
 try:
-    if GEMINI_API_KEY:
-        client = genai.Client(api_key=GEMINI_API_KEY)
+    if OPENAI_API_KEY:
+        client = AsyncOpenAI(api_key=OPENAI_API_KEY)
     else:
-        print("Warning: GEMINI_API_KEY not found in environment variables.")
+        print("Warning: OPENAI_API_KEY not found in environment variables.")
 except Exception as e:
-    print(f"Error initializing Gemini client: {e}")
+    print(f"Error initializing OpenAI client: {e}")
 
-def process_message(text: str, categories: list[str]) -> dict:
+async def process_message(text: str, categories: list[str]) -> dict:
     """
-    Processes the user text using Gemini API to extract structured data.
+    Processes the user text using OpenAI API to extract structured data.
     """
     if not client:
-        print("Gemini client is not initialized.")
+        print("OpenAI client is not initialized.")
         return {
             "type": "error",
             "description": "Client not initialized",
@@ -39,7 +39,7 @@ def process_message(text: str, categories: list[str]) -> dict:
     # Format categories for the prompt
     categories_str = ", ".join(categories) if categories else "Geral"
 
-    prompt = f"""
+    system_prompt = f"""
     Atue como um assistente pessoal financeiro e de agenda para o Ordinis AI.
     Sua tarefa é analisar a mensagem do usuário e extrair dados estruturados em JSON.
 
@@ -62,26 +62,23 @@ def process_message(text: str, categories: list[str]) -> dict:
     - Appointment: {{ "type": "appointment", "title": "String", "date": "ISO String (Data e Hora futura)", "description": "String" }}
 
     Hoje é: {current_time}
-
-    Mensagem do usuário: "{text}"
     """
 
     try:
-        # Usa o modelo flash 2.0 para maior estabilidade de cota
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt,
-            config={
-                'response_mime_type': 'application/json'
-            }
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text}
+            ],
+            response_format={ "type": "json_object" }
         )
-        content = response.text
-        # Limpeza preventiva de markdown
-        content = content.replace("```json", "").replace("```", "").strip()
+
+        content = response.choices[0].message.content
         data = json.loads(content)
         return data
 
     except Exception as e:
         error_str = str(e)
-        print(f"Error processing with Gemini: {error_str}")
+        print(f"Error processing with OpenAI: {error_str}")
         raise e

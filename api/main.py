@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from services.gemini import process_message
+from services.openai_service import process_message
 from services.sheets import save_entry as save_to_sheets
 from services.db import get_user_from_token, save_expense, save_appointment, get_expenses, get_appointments, supabase
 import os
@@ -82,7 +82,7 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/chat")
-def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user = Depends(get_current_user)):
+async def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user = Depends(get_current_user)):
     """
     Receives a user message, processes it with Gemini, and saves to DB.
     """
@@ -116,16 +116,16 @@ def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user 
             print(f"Error initializing Supabase client: {e}")
             pass
 
-    # 1. Process with Gemini
+    # 1. Process with OpenAI
     try:
         # Pass categories to the service
-        structured_response = process_message(request.message, categories)
+        structured_response = await process_message(request.message, categories)
     except Exception as e:
         error_str = str(e)
         if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
             # Fail fast, no retry loop/sleep
             raise HTTPException(status_code=429, detail="IA sobrecarregada. Aguarde.")
-        print(f"Gemini Error: {e}")
+        print(f"OpenAI Error: {e}")
         raise HTTPException(status_code=500, detail="Erro interno da IA")
 
     # Structure is now flat: { "type": "expense"|"appointment"|"error", ...fields... }
