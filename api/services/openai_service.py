@@ -76,6 +76,11 @@ async def process_message(text: str, categories: list[str]) -> dict:
 
         content = response.choices[0].message.content
         data = json.loads(content)
+
+        # Ensure date is never null
+        if not data.get("date"):
+            data["date"] = datetime.now().isoformat()
+
         return data
 
     except Exception as e:
