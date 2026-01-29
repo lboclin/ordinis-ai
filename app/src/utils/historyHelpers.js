@@ -61,14 +61,14 @@ export const getMockHistoryData = () => {
       const normExpenses = expenses.map(e => ({
           ...e,
           type: 'expense',
-          // Ensure we have a valid date object or string consistent for sorting
-          dateObj: new Date(e.date),
+          // Use created_at for audit trail sorting, fall back to date if missing
+          dateObj: new Date(e.created_at || e.date),
       }));
 
       const normAppointments = appointments.map(a => ({
           ...a,
           type: 'appointment',
-          dateObj: new Date(a.date),
+          dateObj: new Date(a.created_at || a.date),
           // Ensure structure compatibility if needed (e.g. description vs title)
           description: a.title,
       }));

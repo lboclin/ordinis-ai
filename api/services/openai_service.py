@@ -56,10 +56,15 @@ async def process_message(text: str, categories: list[str]) -> dict:
     - "Dentista dia 28" (ou médico/serviço com data futura e SEM valor explícito) -> "appointment"
     - "Paguei o dentista" (com ou sem valor) -> "expense"
 
+    REGRA DE CAUTELA (APPOINTMENT):
+    - Se o usuário mencionar um compromisso mas NÃO especificar o horário (hora/minuto), NÃO gere o JSON de "appointment".
+    - Em vez disso, retorne um JSON do tipo "response" perguntando: "Qual seria o horário do compromisso?".
+
     FORMATO DA RESPOSTA (JSON APENAS):
 
     - Expense: {{ "type": "expense", "category": "String (uma das válidas)", "amount": Float, "description": "String", "date": "ISO String (ou null para hoje)" }}
     - Appointment: {{ "type": "appointment", "title": "String", "date": "ISO String (Data e Hora futura)", "description": "String" }}
+    - Response: {{ "type": "response", "message": "String (pergunta de esclarecimento)" }}
 
     Hoje é: {current_time}
     """

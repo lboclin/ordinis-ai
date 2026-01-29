@@ -167,6 +167,9 @@ async def chat_endpoint(request: ChatRequest, authorization: str = Header(None),
     response_message = ""
     if msg_type == "error":
             response_message = "Desculpe, não consegui entender o que você disse. Poderia reformular?"
+    elif msg_type == "response":
+            # Direct response from LLM (e.g. asking for clarification)
+            response_message = structured_response.get("message", "Preciso de mais detalhes.")
     elif saved_db:
         if msg_type == "expense":
             # "✅ Gasto de R$ [valor] em [categoria] anotado!"
