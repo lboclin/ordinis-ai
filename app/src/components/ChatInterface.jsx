@@ -25,6 +25,7 @@ const ChatInterface = ({ onMenuClick }) => {
 
   const handleSend = async (e) => {
     e.preventDefault();
+    // Anti-spam protection: Prevent sending if empty or already loading
     if (!input.trim() || isLoading) return;
 
     const userMessage = { id: Date.now(), role: 'user', content: input };
@@ -50,7 +51,6 @@ const ChatInterface = ({ onMenuClick }) => {
       });
 
       // Strict Error Handling Check
-      // Axios throws on 4xx/5xx by default, but we check just in case configuration changes
       if (response.status !== 200) {
           throw new Error("Request failed with status " + response.status);
       }
@@ -71,13 +71,11 @@ const ChatInterface = ({ onMenuClick }) => {
 
       if (error.response?.status === 429) {
           toast.error(error.response.data.detail || "Sistema sobrecarregado. Aguarde 1 minuto.");
-          // CRITICAL: STOP here. Do not add fake message.
+          // CRITICAL: Stop here to prevent loop or fake success
           setIsLoading(false);
           return;
       } else if (error.response?.status === 401) {
           toast.error("Sessão expirada. Faça login novamente.");
-          // Optionally trigger logout logic here if context allows,
-          // but for now we rely on global handling or user action.
       } else {
           const errorMessage = {
             id: Date.now() + 1,
@@ -145,7 +143,7 @@ const ChatInterface = ({ onMenuClick }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Digite uma mensagem..."
-              className="w-full bg-[#202123] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-white/5 shadow-sm disabled:opacity-50"
+              className="w-full bg-[#202123] text-white placeholder-gray-400 rounded-lg pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-white/5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             />
             <button

@@ -86,26 +86,11 @@ def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user 
     """
     Receives a user message, processes it with Gemini, and saves to DB.
     """
-    # 1. Process with Gemini
-    try:
-        structured_response = process_message(request.message)
-    except Exception as e:
-        error_str = str(e)
-        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-            time.sleep(1) # Brake the loop
-            raise HTTPException(status_code=429, detail="IA sobrecarregada. Aguarde.")
-        print(f"Gemini Error: {e}")
-        raise HTTPException(status_code=500, detail="Erro interno da IA")
 
-    # Structure: { "type": "expense"|"appointment"|"error", "data": { ... } }
+    # Initialize Supabase client early to fetch categories
+    categories = []
+    supabase_client = None
 
-    msg_type = structured_response.get("type")
-    data_payload = structured_response.get("data", {})
-
-    # 2. Save to DB (Refactored for RLS)
-    saved_db = False
-
-    # Initialize authenticated Supabase client
     if authorization:
         token = authorization.replace("Bearer ", "")
         url: str = os.environ.get("SUPABASE_URL")
@@ -119,25 +104,57 @@ def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user 
                 options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
             )
 
+            # Fetch user categories
+            try:
+                cat_response = supabase_client.table("categories").select("name").eq("user_id", user.id).execute()
+                categories = [c['name'] for c in cat_response.data] if cat_response.data else []
+            except Exception as cat_err:
+                print(f"Error fetching categories: {cat_err}")
+                categories = []
+
+        except Exception as e:
+            print(f"Error initializing Supabase client: {e}")
+            pass
+
+    # 1. Process with Gemini
+    try:
+        # Pass categories to the service
+        structured_response = process_message(request.message, categories)
+    except Exception as e:
+        error_str = str(e)
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            # Fail fast, no retry loop/sleep
+            raise HTTPException(status_code=429, detail="IA sobrecarregada. Aguarde.")
+        print(f"Gemini Error: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno da IA")
+
+    # Structure is now flat: { "type": "expense"|"appointment"|"error", ...fields... }
+
+    msg_type = structured_response.get("type")
+
+    # 2. Save to DB (Refactored for RLS)
+    saved_db = False
+
+    if supabase_client and msg_type != "error":
+        try:
             if msg_type == "expense":
                 db_payload = {
                     "user_id": user.id,
-                    "category": data_payload.get("category"),
-                    "amount": data_payload.get("amount"),
-                    "date": data_payload.get("date"),
-                    "description": data_payload.get("description"),
-                    "tags": data_payload.get("tags", [])
+                    "category": structured_response.get("category"),
+                    "amount": structured_response.get("amount"),
+                    "date": structured_response.get("date"),
+                    "description": structured_response.get("description"),
+                    "tags": structured_response.get("tags", [])
                 }
                 supabase_client.table("expenses").insert(db_payload).execute()
                 saved_db = True
 
             elif msg_type == "appointment":
-                # Note: New prompt returns ISO date in 'date' field
                 db_payload = {
                     "user_id": user.id,
-                    "title": data_payload.get("title"),
-                    "date": data_payload.get("date"),
-                    "description": data_payload.get("description")
+                    "title": structured_response.get("title"),
+                    "date": structured_response.get("date"),
+                    "description": structured_response.get("description")
                 }
                 supabase_client.table("appointments").insert(db_payload).execute()
                 saved_db = True
@@ -153,13 +170,13 @@ def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user 
     elif saved_db:
         if msg_type == "expense":
             # "✅ Gasto de R$ [valor] em [categoria] anotado!"
-            val = f"{data_payload.get('amount', 0):.2f}".replace('.', ',')
-            cat = data_payload.get('category', 'geral')
+            val = f"{structured_response.get('amount', 0):.2f}".replace('.', ',')
+            cat = structured_response.get('category', 'geral')
             response_message = f"✅ Gasto de R$ {val} em {cat} anotado!"
         else:
-                # "📅 [descrição] marcado para [data]" (Novo prompt retorna ISO)
-                title = data_payload.get('title', 'Compromisso')
-                date_iso = data_payload.get('date', '')
+                # "📅 [descrição] marcado para [data]"
+                title = structured_response.get('title', 'Compromisso')
+                date_iso = structured_response.get('date', '')
 
                 fmt_date = date_iso
                 try:
@@ -171,7 +188,10 @@ def chat_endpoint(request: ChatRequest, authorization: str = Header(None), user 
                 response_message = f"📅 {title} marcado para {fmt_date}."
     else:
             # Fallback if DB save failed or other type
-            response_message = f"Entendi que é um {msg_type}, mas tive um erro ao salvar no banco de dados."
+            if msg_type in ["expense", "appointment"]:
+                 response_message = f"Entendi que é um {msg_type}, mas tive um erro ao salvar no banco de dados."
+            else:
+                 response_message = "Não entendi sua solicitação."
 
     return {
         "response": response_message,

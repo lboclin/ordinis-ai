@@ -17,7 +17,7 @@ try:
 except Exception as e:
     print(f"Error initializing Gemini client: {e}")
 
-def process_message(text: str) -> dict:
+def process_message(text: str, categories: list[str]) -> dict:
     """
     Processes the user text using Gemini API to extract structured data.
     """
@@ -25,17 +25,23 @@ def process_message(text: str) -> dict:
         print("Gemini client is not initialized.")
         return {
             "type": "error",
-            "data": {
-                "description": "Client not initialized",
-                "category": "Error"
-            }
+            "description": "Client not initialized",
+            "category": "Error"
         }
 
     current_time = datetime.now().isoformat()
 
+    # Format categories for the prompt
+    categories_str = ", ".join(categories) if categories else "Geral"
+
     prompt = f"""
     Atue como um assistente pessoal financeiro e de agenda para o Ordinis AI.
     Sua tarefa é analisar a mensagem do usuário e extrair dados estruturados em JSON.
+
+    CATEGORIAS VÁLIDAS DO USUÁRIO:
+    [{categories_str}]
+
+    Se o usuário citar algo relacionado a estas categorias, classifique corretamente.
 
     REGRAS DE CLASSIFICAÇÃO:
     - Se a mensagem for sobre um pagamento, compra ou custo -> "expense"
@@ -47,27 +53,8 @@ def process_message(text: str) -> dict:
 
     FORMATO DA RESPOSTA (JSON APENAS):
 
-    1. Para DESPESAS (expense):
-    {{
-      "type": "expense",
-      "data": {{
-        "category": "Transporte" | "Alimentação" | "Saúde" | "Lazer" | "Casa" | "Outros",
-        "amount": float,
-        "description": string,
-        "date": "YYYY-MM-DD" (se ano não informado, use {datetime.now().year}),
-        "tags": [string]
-      }}
-    }}
-
-    2. Para COMPROMISSOS (appointment):
-    {{
-      "type": "appointment",
-      "data": {{
-        "title": string,
-        "date": "YYYY-MM-DDTHH:MM:SS" (Se hora não informada, assuma 09:00:00),
-        "description": string
-      }}
-    }}
+    - Expense: {{ "type": "expense", "category": "String (uma das válidas)", "amount": Float, "description": "String", "date": "ISO String (ou null para hoje)" }}
+    - Appointment: {{ "type": "appointment", "title": "String", "date": "ISO String (Data e Hora futura)", "description": "String" }}
 
     Hoje é: {current_time}
 
