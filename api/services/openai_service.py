@@ -57,9 +57,11 @@ async def process_message(text: str, categories: list[str]) -> dict:
     - "Dentista dia 28" (ou médico/serviço com data futura e SEM valor explícito) -> "appointment"
     - "Paguei o dentista" (com ou sem valor) -> "expense"
 
-    REGRA DE CAUTELA (APPOINTMENT):
-    - Se o usuário mencionar um compromisso mas NÃO especificar o horário (hora/minuto), NÃO gere o JSON de "appointment".
-    - Em vez disso, retorne um JSON do tipo "response" perguntando: "Poderia repetir a mensagem citando o horário do compromisso?".
+    REGRA DE FLEXIBILIDADE DE HORÁRIO:
+    - Seja MUITO flexível com horários. Aceite termos como "de noite", "manhã", "à tarde", "logo mais", "22h", "10h".
+    - Se o usuário der qualquer indicativo de tempo (mesmo vago), ACEITE e processe o agendamento.
+    - Se ele disser "dia 7", assuma que é o próximo dia 7.
+    - APENAS pergunte novamente se NÃO HOUVER NENHUMA menção a tempo na frase.
 
     FORMATO DA RESPOSTA (JSON APENAS):
 

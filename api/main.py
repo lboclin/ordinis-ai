@@ -186,11 +186,11 @@ async def chat_endpoint(request: ChatRequest, authorization: str = Header(None),
 
             elif msg_type == "cancellation":
                 # 1. Fetch last expense
-                last_exp = supabase_client.table("expenses").select("id, amount, created_at").order("created_at", desc=True).limit(1).execute()
+                last_exp = supabase_client.table("expenses").select("id, amount, created_at").eq("user_id", user.id).order("created_at", desc=True).limit(1).execute()
                 exp_data = last_exp.data[0] if last_exp.data else None
 
                 # 2. Fetch last appointment
-                last_appt = supabase_client.table("appointments").select("id, title, created_at").order("created_at", desc=True).limit(1).execute()
+                last_appt = supabase_client.table("appointments").select("id, title, created_at").eq("user_id", user.id).order("created_at", desc=True).limit(1).execute()
                 appt_data = last_appt.data[0] if last_appt.data else None
 
                 target = None
@@ -216,10 +216,10 @@ async def chat_endpoint(request: ChatRequest, authorization: str = Header(None),
                     table = "appointments"
                     desc_text = f"Evento {target.get('title', 'Sem título')}"
 
-                # 4. Delete
+                # 4. Soft Delete (Update is_cancelled)
                 if target:
-                    supabase_client.table(table).delete().eq("id", target["id"]).execute()
-                    structured_response["message"] = f"✅ Ação desfeita! O último registro ({desc_text}) foi removido."
+                    supabase_client.table(table).update({"is_cancelled": True}).eq("id", target["id"]).execute()
+                    structured_response["message"] = f"✅ Ação desfeita! O último registro ({desc_text}) foi cancelado."
                     saved_db = True
                 else:
                     structured_response["message"] = "⚠️ Não encontrei nenhum registro recente para cancelar."
@@ -290,7 +290,7 @@ def get_agenda_data(user = Depends(get_current_user)):
 
 # Nova rota solicitada: /expenses
 @app.get("/expenses")
-def get_expenses_data(authorization: str = Header(None), user = Depends(get_current_user)):
+def get_expenses_data(include_cancelled: bool = False, authorization: str = Header(None), user = Depends(get_current_user)):
     try:
         # Use User Token for RLS
         token = authorization.replace("Bearer ", "")
@@ -303,7 +303,11 @@ def get_expenses_data(authorization: str = Header(None), user = Depends(get_curr
             options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
         )
 
-        response = supabase_client.table("expenses").select("*").execute()
+        query = supabase_client.table("expenses").select("*")
+        if not include_cancelled:
+            query = query.eq("is_cancelled", False)
+
+        response = query.execute()
         return response.data
     except Exception as e:
         print(f"Error fetching expenses data: {e}")
@@ -312,7 +316,7 @@ def get_expenses_data(authorization: str = Header(None), user = Depends(get_curr
 
 # Nova rota solicitada: /appointments
 @app.get("/appointments")
-def get_appointments_data(authorization: str = Header(None), user = Depends(get_current_user)):
+def get_appointments_data(include_cancelled: bool = False, authorization: str = Header(None), user = Depends(get_current_user)):
     try:
         # Use User Token for RLS
         token = authorization.replace("Bearer ", "")
@@ -325,7 +329,11 @@ def get_appointments_data(authorization: str = Header(None), user = Depends(get_
             options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
         )
 
-        response = supabase_client.table("appointments").select("*").execute()
+        query = supabase_client.table("appointments").select("*")
+        if not include_cancelled:
+             query = query.eq("is_cancelled", False)
+
+        response = query.execute()
         return response.data
     except Exception as e:
         print(f"Error fetching appointments data: {e}")

@@ -77,7 +77,7 @@ def get_expenses(user_id: str):
     if not supabase:
         return []
     try:
-        response = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
+        response = supabase.table("expenses").select("*").eq("user_id", user_id).eq("is_cancelled", False).execute()
         return response.data
     except Exception as e:
         print(f"Error fetching expenses: {e}")
@@ -87,7 +87,7 @@ def get_appointments(user_id: str):
     if not supabase:
         return []
     try:
-        response = supabase.table("appointments").select("*").eq("user_id", user_id).execute()
+        response = supabase.table("appointments").select("*").eq("user_id", user_id).eq("is_cancelled", False).execute()
         return response.data
     except Exception as e:
         print(f"Error fetching appointments: {e}")

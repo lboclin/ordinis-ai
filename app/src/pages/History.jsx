@@ -48,8 +48,14 @@ const History = ({ onMenuClick }) => {
 
         // Parallel Fetch
         const [expensesRes, appointmentsRes] = await Promise.all([
-            axios.get('http://localhost:8000/expenses', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] })),
-            axios.get('http://localhost:8000/appointments', { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
+            axios.get('http://localhost:8000/expenses', {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { include_cancelled: true }
+            }).catch(() => ({ data: [] })),
+            axios.get('http://localhost:8000/appointments', {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { include_cancelled: true }
+            }).catch(() => ({ data: [] }))
         ]);
 
         const normalized = normalizeData(expensesRes.data, appointmentsRes.data);

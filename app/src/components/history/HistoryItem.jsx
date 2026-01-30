@@ -4,9 +4,10 @@ import { formatCurrency, formatTime } from '../../utils/historyHelpers';
 
 const HistoryItem = ({ item }) => {
   const isExpense = item.type === 'expense';
+  const isCancelled = item.is_cancelled;
 
   return (
-    <div className="flex items-center justify-between p-4 bg-[#202123] border border-white/5 rounded-xl hover:bg-[#2A2B32] transition-colors group">
+    <div className={`flex items-center justify-between p-4 bg-[#202123] border border-white/5 rounded-xl hover:bg-[#2A2B32] transition-colors group relative ${isCancelled ? 'opacity-60' : ''}`}>
       <div className="flex items-center gap-4">
         {/* Icon Badge */}
         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
@@ -17,10 +18,15 @@ const HistoryItem = ({ item }) => {
 
         {/* Text Content */}
         <div className="flex flex-col">
-            <span className="text-white font-medium text-sm md:text-base line-clamp-1">
+            <span className={`text-white font-medium text-sm md:text-base line-clamp-1 ${isCancelled ? 'line-through decoration-red-500/50' : ''}`}>
                 {isExpense ? item.description : item.title}
             </span>
             <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                 {isCancelled && (
+                     <span className="bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase">
+                         Cancelado
+                     </span>
+                 )}
                  {isExpense && item.category && (
                      <span className="uppercase tracking-wide">{item.category}</span>
                  )}
