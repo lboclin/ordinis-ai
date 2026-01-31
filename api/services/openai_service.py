@@ -3,6 +3,7 @@ import json
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 load_dotenv()
 
@@ -34,7 +35,12 @@ async def process_message(text: str, categories: list[str]) -> dict:
             "category": "Error"
         }
 
-    current_time = datetime.now().isoformat()
+    # Timezone Configuration (America/Sao_Paulo)
+    tz_brazil = ZoneInfo('America/Sao_Paulo')
+    now_brazil = datetime.now(tz_brazil)
+
+    current_date_str = now_brazil.strftime('%d/%m/%Y (%A)')
+    current_time_str = now_brazil.strftime('%H:%M')
 
     # Format categories for the prompt
     categories_str = ", ".join(categories) if categories else "Geral"
@@ -42,6 +48,14 @@ async def process_message(text: str, categories: list[str]) -> dict:
     system_prompt = f"""
     Atue como um assistente pessoal financeiro e de agenda para o Ordinis AI.
     Sua tarefa é analisar a mensagem do usuário e extrair dados estruturados em JSON.
+
+    CONTEXTO TEMPORAL CRÍTICO:
+    - Você está operando no fuso horário 'America/Sao_Paulo' (UTC-3).
+    - Data e Hora Atual Local: {current_date_str}, {current_time_str}.
+    - Se o usuário disser "hoje", "amanhã" ou "sábado", calcule a data baseando-se na Data Atual Local acima.
+    - AO GERAR O JSON DE DATA (ISO 8601):
+        - Sempre adicione o offset "-03:00" no final da string de data para garantir a precisão.
+        - Exemplo: Se o usuário pedir "às 22h", gere "2026-01-30T22:00:00-03:00".
 
     CATEGORIAS VÁLIDAS DO USUÁRIO:
     [{categories_str}]
@@ -69,8 +83,6 @@ async def process_message(text: str, categories: list[str]) -> dict:
     - Appointment: {{ "type": "appointment", "title": "String", "date": "ISO String (Data e Hora futura)", "description": "String" }}
     - Cancellation: {{ "type": "cancellation" }}
     - Response: {{ "type": "response", "message": "String (pergunta de esclarecimento)" }}
-
-    Hoje é: {current_time}
     """
 
     try:
@@ -88,7 +100,7 @@ async def process_message(text: str, categories: list[str]) -> dict:
 
         # Ensure date is never null
         if not data.get("date"):
-            data["date"] = datetime.now().isoformat()
+            data["date"] = datetime.now(ZoneInfo('America/Sao_Paulo')).isoformat()
 
         return data
 
