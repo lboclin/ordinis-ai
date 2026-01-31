@@ -8,3 +8,4 @@ supabase
 PyJWT
 openai
 python-multipart
+tzdata
