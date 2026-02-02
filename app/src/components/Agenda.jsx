@@ -8,6 +8,8 @@ import WeekNavigator from './agenda/WeekNavigator';
 import MonthCalendarModal from './agenda/MonthCalendarModal';
 import AppointmentList from './agenda/AppointmentList';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const Agenda = ({ onMenuClick }) => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -30,8 +32,8 @@ const Agenda = ({ onMenuClick }) => {
             }
 
             if (token) {
-                // Assuming backend is running on localhost:8000
-                const response = await axios.get('http://localhost:8000/appointments', {
+                // Using dynamic API_URL
+                const response = await axios.get(`${API_URL}/appointments`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
