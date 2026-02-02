@@ -6,6 +6,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const ChatInterface = ({ onMenuClick }) => {
   const { triggerDataUpdate } = useAuth();
   const [messages, setMessages] = useState([
@@ -89,7 +91,7 @@ const ChatInterface = ({ onMenuClick }) => {
           const formData = new FormData();
           formData.append('file', audioBlob, 'voice_message.webm');
 
-          const response = await axios.post('http://localhost:8000/transcribe', formData, {
+          const response = await axios.post(`${API_URL}/transcribe`, formData, {
               headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'multipart/form-data'
@@ -122,7 +124,7 @@ const ChatInterface = ({ onMenuClick }) => {
         const token = session?.access_token;
         if (!token) throw new Error("No auth token");
 
-        const response = await axios.post('http://localhost:8000/chat', {
+        const response = await axios.post(`${API_URL}/chat`, {
           message: userMessage.content
         }, {
             headers: { Authorization: `Bearer ${token}` }

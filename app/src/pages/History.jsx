@@ -11,6 +11,8 @@ import {
 
 import HistoryGroup from '../components/history/HistoryGroup';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const History = ({ onMenuClick }) => {
   const { lastDataUpdate } = useAuth();
   const [items, setItems] = useState([]);
@@ -48,11 +50,11 @@ const History = ({ onMenuClick }) => {
 
         // Parallel Fetch
         const [expensesRes, appointmentsRes] = await Promise.all([
-            axios.get('http://localhost:8000/expenses', {
+            axios.get(`${API_URL}/expenses`, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { include_cancelled: true }
             }).catch(() => ({ data: [] })),
-            axios.get('http://localhost:8000/appointments', {
+            axios.get(`${API_URL}/appointments`, {
                 headers: { Authorization: `Bearer ${token}` },
                 params: { include_cancelled: true }
             }).catch(() => ({ data: [] }))

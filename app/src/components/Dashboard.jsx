@@ -11,6 +11,8 @@ import InsightsCard from './dashboard/InsightsCard';
 import CategoryDetailsModal from './dashboard/CategoryDetailsModal';
 import AllCategoriesModal from './dashboard/AllCategoriesModal';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const Dashboard = ({ onMenuClick }) => {
   const { lastDataUpdate } = useAuth();
   const [expenses, setExpenses] = useState([]);
@@ -40,7 +42,7 @@ const Dashboard = ({ onMenuClick }) => {
            return;
         }
 
-        const response = await axios.get('http://localhost:8000/expenses', {
+        const response = await axios.get(`${API_URL}/expenses`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         setExpenses(response.data);
