@@ -3,7 +3,7 @@ import json
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from datetime import datetime
-from zoneinfo import ZoneInfo
+import pytz
 
 load_dotenv()
 
@@ -36,7 +36,7 @@ async def process_message(text: str, categories: list[str]) -> dict:
         }
 
     # Timezone Configuration (America/Sao_Paulo)
-    tz_brazil = ZoneInfo('America/Sao_Paulo')
+    tz_brazil = pytz.timezone('America/Sao_Paulo')
     now_brazil = datetime.now(tz_brazil)
 
     current_date_str = now_brazil.strftime('%d/%m/%Y (%A)')
@@ -100,7 +100,7 @@ async def process_message(text: str, categories: list[str]) -> dict:
 
         # Ensure date is never null
         if not data.get("date"):
-            data["date"] = datetime.now(ZoneInfo('America/Sao_Paulo')).isoformat()
+            data["date"] = datetime.now(pytz.timezone('America/Sao_Paulo')).isoformat()
 
         return data
 
