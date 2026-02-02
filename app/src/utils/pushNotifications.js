@@ -67,12 +67,12 @@ export async function subscribeToPushNotifications() {
     const token = session?.access_token;
 
     if (token) {
-        await axios.post(`${API_URL}/subscribe`, subscription, {
+        const response = await axios.post(`${API_URL}/subscribe`, subscription, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         });
-        console.log('Push subscription synced with backend.');
+        console.log("✅ PUSH REGISTRADO NO BACKEND:", response.data);
     }
 
     return subscription;

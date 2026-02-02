@@ -357,6 +357,26 @@ def get_appointments_data(include_cancelled: bool = False, authorization: str = 
         # Return empty list on error instead of 404/500 to prevent frontend crash
         return []
 
+@app.delete("/appointments/{appointment_id}")
+def delete_appointment(appointment_id: str, authorization: str = Header(None), user = Depends(get_current_user)):
+    try:
+        token = authorization.replace("Bearer ", "")
+        url: str = os.environ.get("SUPABASE_URL")
+        key: str = os.environ.get("SUPABASE_KEY")
+
+        supabase_client = create_client(
+            url,
+            key,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+
+        # Soft delete: set is_cancelled = True
+        response = supabase_client.table("appointments").update({"is_cancelled": True}).eq("id", appointment_id).execute()
+        return {"message": "Appointment cancelled", "data": response.data}
+    except Exception as e:
+        print(f"Error deleting appointment: {e}")
+        raise HTTPException(status_code=500, detail="Error cancelling appointment")
+
 @app.post("/subscribe")
 def subscribe(request: SubscriptionRequest, user = Depends(get_current_user)):
     try:

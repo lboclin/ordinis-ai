@@ -109,6 +109,9 @@ def check_reminders():
             if -5 <= diff <= 65: # Asepting slight delays or slightly early checks
                 logger.info(f"[SCHEDULER] 🔔 Triggering reminder for {appt.get('title')}")
                 subs = get_active_subscriptions(uid)
+
+                logger.info(f"[SCHEDULER] Usuário {uid} tem {len(subs)} dispositivos cadastrados.")
+
                 if not subs:
                     logger.warning(f"[SCHEDULER] ⚠️ Nenhum subscription ativo para User {uid}")
 
@@ -161,6 +164,7 @@ def check_reminders():
                         logger.info(f"[SCHEDULER] 🚀 ENVIANDO PUSH Day Before para User {uid}")
 
                         subs = get_active_subscriptions(uid)
+                        logger.info(f"[SCHEDULER] Usuário {uid} tem {len(subs)} dispositivos cadastrados.")
                         for sub in subs:
                             send_push(sub, msg, {"url": "/agenda"})
 

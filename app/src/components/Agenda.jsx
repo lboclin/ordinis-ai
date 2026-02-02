@@ -64,10 +64,24 @@ const Agenda = ({ onMenuClick }) => {
   // Refresh trigger listener could be added here if we had a global refresh context,
   // but for now we stick to basic fetch.
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
       if (confirm('Tem certeza que deseja excluir este compromisso?')) {
-          setAppointments(prev => prev.filter(app => app.id !== id));
-          // TODO: Call API to delete
+          try {
+              const { data: { session } } = await supabase.auth.getSession();
+              const token = session?.access_token;
+
+              if (token) {
+                  await axios.delete(`${API_URL}/appointments/${id}`, {
+                      headers: {
+                          Authorization: `Bearer ${token}`
+                      }
+                  });
+                  setAppointments(prev => prev.filter(app => app.id !== id));
+              }
+          } catch (error) {
+              console.error("Erro ao excluir compromisso:", error);
+              alert("Erro ao excluir compromisso.");
+          }
       }
   };
 
