@@ -10,11 +10,18 @@ import {
   Grid,
   FileSpreadsheet,
   Loader2,
-  Download
+  Download,
+  Bell,
+  Clock,
+  Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { subscribeToPushNotifications } from '../utils/pushNotifications';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Predefined colors for new categories
 const CATEGORY_COLORS = [
@@ -49,6 +56,17 @@ const Settings = ({ onMenuClick }) => {
   const [addingCategory, setAddingCategory] = useState(false);
   const [loadingDefaults, setLoadingDefaults] = useState(false);
 
+  // Notification State
+  const [notifSettings, setNotifSettings] = useState({
+    enabled: true,
+    reminder_time_minutes: 60,
+    day_before_alert_enabled: true,
+    day_before_alert_time: '20:00',
+    morning_threshold: '11:00'
+  });
+  const [loadingNotif, setLoadingNotif] = useState(true);
+  const [savingNotif, setSavingNotif] = useState(false);
+
   // Account State
   const email = user?.email;
   const fullName = user?.user_metadata?.full_name || 'Usuário';
@@ -60,6 +78,7 @@ const Settings = ({ onMenuClick }) => {
 
   useEffect(() => {
     fetchCategories();
+    fetchNotificationSettings();
   }, []);
 
   const fetchCategories = async () => {
@@ -76,6 +95,55 @@ const Settings = ({ onMenuClick }) => {
       console.error('Error fetching categories:', error);
     } finally {
       setLoadingCategories(false);
+    }
+  };
+
+  const fetchNotificationSettings = async () => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+
+        const response = await axios.get(`${API_URL}/settings/notifications`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Convert time formats if needed (HH:MM:SS -> HH:MM)
+        const d = response.data;
+        setNotifSettings({
+            ...d,
+            day_before_alert_time: d.day_before_alert_time.slice(0, 5),
+            morning_threshold: d.morning_threshold.slice(0, 5)
+        });
+    } catch (error) {
+        console.error('Error fetching notif settings:', error);
+    } finally {
+        setLoadingNotif(false);
+    }
+  };
+
+  const handleSaveNotification = async () => {
+    try {
+        setSavingNotif(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        // 1. If enabling, try to subscribe push
+        if (notifSettings.enabled) {
+           await subscribeToPushNotifications();
+        }
+
+        // 2. Save settings to backend
+        await axios.put(`${API_URL}/settings/notifications`, notifSettings, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        toast.success('Configurações de notificação salvas!');
+    } catch (error) {
+        console.error('Error saving notifications:', error);
+        toast.error('Erro ao salvar configurações.');
+    } finally {
+        setSavingNotif(false);
     }
   };
 
@@ -205,7 +273,121 @@ const Settings = ({ onMenuClick }) => {
         <div className="max-w-4xl mx-auto space-y-6">
             <h2 className="text-2xl font-bold mb-6 hidden md:block">Configurações</h2>
 
-            {/* CARD 1: CONTA */}
+            {/* CARD 1: NOTIFICAÇÕES (NOVO) */}
+            <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Bell className="text-yellow-400" size={20} />
+                        <h3 className="font-semibold">Notificações</h3>
+                    </div>
+                    {/* Botão de Salvar no Header do Card */}
+                    <button
+                        onClick={handleSaveNotification}
+                        disabled={savingNotif || loadingNotif}
+                        className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-gray-200 transition-colors"
+                    >
+                        {savingNotif ? 'Salvando...' : 'Salvar Alterações'}
+                    </button>
+                </div>
+
+                {loadingNotif ? (
+                     <div className="p-8 flex justify-center text-gray-500">
+                        <Loader2 className="animate-spin" size={24}/>
+                     </div>
+                ) : (
+                    <div className="p-6 space-y-6">
+                        {/* Toggle Global */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h4 className="font-medium text-gray-200">Receber Notificações</h4>
+                                <p className="text-sm text-gray-500">Ativa lembretes via Push no dispositivo.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={notifSettings.enabled}
+                                    onChange={(e) => setNotifSettings({...notifSettings, enabled: e.target.checked})}
+                                />
+                                <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+
+                        {notifSettings.enabled && (
+                            <>
+                                <hr className="border-white/5" />
+
+                                {/* Antecedência */}
+                                <div className="flex items-center justify-between">
+                                     <div className="flex items-center gap-3">
+                                        <Clock className="text-gray-400" size={18} />
+                                        <span className="text-gray-300">Avisar com antecedência de:</span>
+                                     </div>
+                                     <select
+                                        value={notifSettings.reminder_time_minutes}
+                                        onChange={(e) => setNotifSettings({...notifSettings, reminder_time_minutes: parseInt(e.target.value)})}
+                                        className="bg-black/20 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-blue-500"
+                                     >
+                                         <option value={15}>15 minutos</option>
+                                         <option value={30}>30 minutos</option>
+                                         <option value={60}>1 hora</option>
+                                         <option value={120}>2 horas</option>
+                                     </select>
+                                </div>
+
+                                <hr className="border-white/5" />
+
+                                {/* Resumo Dia Anterior */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Calendar className="text-gray-400" size={18} />
+                                            <div>
+                                                <span className="text-gray-300 block">Resumo do dia seguinte</span>
+                                                <span className="text-xs text-gray-500">Avisar na noite anterior se houver compromisso cedo.</span>
+                                            </div>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={notifSettings.day_before_alert_enabled}
+                                                onChange={(e) => setNotifSettings({...notifSettings, day_before_alert_enabled: e.target.checked})}
+                                            />
+                                            <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+
+                                    {notifSettings.day_before_alert_enabled && (
+                                        <div className="flex items-center gap-4 pl-8">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500">Horário do aviso</label>
+                                                <input
+                                                    type="time"
+                                                    value={notifSettings.day_before_alert_time}
+                                                    onChange={(e) => setNotifSettings({...notifSettings, day_before_alert_time: e.target.value})}
+                                                    className="bg-black/20 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500">Considerar "Manhã" até</label>
+                                                <input
+                                                    type="time"
+                                                    value={notifSettings.morning_threshold}
+                                                    onChange={(e) => setNotifSettings({...notifSettings, morning_threshold: e.target.value})}
+                                                    className="bg-black/20 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* CARD 2: CONTA */}
             <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
                     <User className="text-blue-400" size={20} />
@@ -263,7 +445,7 @@ const Settings = ({ onMenuClick }) => {
                 </div>
             </div>
 
-            {/* CARD 2: CATEGORIAS */}
+            {/* CARD 3: CATEGORIAS */}
             <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
                     <Grid className="text-emerald-400" size={20} />
@@ -337,7 +519,7 @@ const Settings = ({ onMenuClick }) => {
                 </div>
             </div>
 
-            {/* CARD 3: INTEGRAÇÕES */}
+            {/* CARD 4: INTEGRAÇÕES */}
             <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden opacity-75">
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
                     <FileSpreadsheet className="text-green-400" size={20} />

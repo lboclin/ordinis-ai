@@ -9,3 +9,5 @@ PyJWT
 openai
 python-multipart
 pytz
+pywebpush
+apscheduler

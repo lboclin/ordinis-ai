@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
@@ -7,11 +7,24 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import History from './pages/History';
 import Settings from './pages/Settings';
+import { registerServiceWorker, subscribeToPushNotifications } from './utils/pushNotifications';
 
 const AuthenticatedApp = () => {
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState('chat');
+
+  useEffect(() => {
+    if (user) {
+        // Init Push Notifications
+        const initPush = async () => {
+            await registerServiceWorker();
+            // Try to subscribe (will request permission if needed, as per requirements)
+            await subscribeToPushNotifications();
+        };
+        initPush();
+    }
+  }, [user]);
 
   if (!user) {
     return <Login />;

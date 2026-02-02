@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from services.openai_service import process_message, transcribe_audio
 from services.sheets import save_entry as save_to_sheets
 from services.db import get_user_from_token, save_expense, save_appointment, get_expenses, get_appointments, supabase
+from services.notification_service import save_subscription, get_notification_settings, update_notification_settings
+from services.scheduler import start_scheduler
 import os
 import uvicorn
 import time
@@ -16,6 +18,10 @@ load_dotenv()
 
 app = FastAPI(title="Ordinis AI API")
 
+@app.on_event("startup")
+def startup_event():
+    start_scheduler()
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -27,6 +33,17 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     message: str
+
+class SubscriptionRequest(BaseModel):
+    endpoint: str
+    keys: dict
+
+class NotificationSettingsRequest(BaseModel):
+    enabled: bool
+    reminder_time_minutes: int
+    day_before_alert_enabled: bool
+    day_before_alert_time: str
+    morning_threshold: str
 
 class UserFallback:
     def __init__(self, id, email=None):
@@ -339,6 +356,35 @@ def get_appointments_data(include_cancelled: bool = False, authorization: str = 
         print(f"Error fetching appointments data: {e}")
         # Return empty list on error instead of 404/500 to prevent frontend crash
         return []
+
+@app.post("/subscribe")
+def subscribe(request: SubscriptionRequest, user = Depends(get_current_user)):
+    try:
+        sub_data = request.dict()
+        save_subscription(user.id, sub_data)
+        return {"status": "subscribed"}
+    except Exception as e:
+        print(f"Subscription Error: {e}")
+        raise HTTPException(status_code=500, detail="Error saving subscription")
+
+@app.get("/settings/notifications")
+def get_notif_settings(user = Depends(get_current_user)):
+    try:
+        settings = get_notification_settings(user.id)
+        return settings
+    except Exception as e:
+        print(f"Get Settings Error: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching settings")
+
+@app.put("/settings/notifications")
+def update_notif_settings(request: NotificationSettingsRequest, user = Depends(get_current_user)):
+    try:
+        data = request.dict()
+        updated = update_notification_settings(user.id, data)
+        return updated
+    except Exception as e:
+        print(f"Update Settings Error: {e}")
+        raise HTTPException(status_code=500, detail="Error updating settings")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
