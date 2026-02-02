@@ -40,8 +40,9 @@ def send_push(subscription, message, data=None):
             vapid_private_key=vapid_private,
             vapid_claims={"sub": vapid_email}
         )
+        logger.info(f"🚀 ENVIANDO PUSH para endpoint {subscription['endpoint'][:20]}...")
     except WebPushException as ex:
-        logger.error(f"WebPush Error: {ex}")
+        logger.error(f"❌ Erro ao enviar: {ex}")
         if ex.response and ex.response.status_code == 410:
              # Subscription expired/gone. In a real app, delete from DB.
              pass
@@ -49,12 +50,16 @@ def send_push(subscription, message, data=None):
 def check_reminders():
     try:
         now = datetime.now(TZ)
-        logger.info(f"Checking reminders at {now}")
+        # Reduce spammy logs, only log if significant activity or periodically
+        # logger.info(f"Checking reminders at {now}")
 
         # --- 1. STANDARD REMINDERS ---
         # Look ahead 2 hours + buffer
         limit = now + timedelta(hours=2, minutes=5)
         appointments = get_appointments_in_range(now.isoformat(), limit.isoformat())
+
+        if appointments:
+             logger.info(f"[SCHEDULER] Encontrados {len(appointments)} compromissos na janela de busca.")
 
         user_settings_cache = {}
 
@@ -85,17 +90,34 @@ def check_reminders():
             trigger_time = appt_dt - timedelta(minutes=reminder_minutes)
 
             # Check if we are within the "current minute" of the trigger
-            # Use strict < 30s check to avoid overlapping with next 60s run
             diff = (trigger_time - now).total_seconds()
 
-            if abs(diff) < 29: # 58s window, avoids edge case overlap
-                logger.info(f"Triggering reminder for {appt.get('title')}")
+            # Debug log for analysis
+            logger.info(f"[SCHEDULER] Analisando: {appt.get('title')} - Diff Segundos: {diff:.2f} - ConfigUsuario: {reminder_minutes} min")
+
+            # Wider window: -30s to +30s (approx 1 min window) to catch it reliably
+            # Since scheduler runs every 60s, a 60s window covers everything without gaps.
+            # abs(diff) < 35 might have been too tight if jitter > 5s? No, 35 is actually > 30.
+            # Let's align with the requested logic: "window"
+            # If we run every 60s, the check times are T, T+60, T+120.
+            # An event at T+30 should be caught.
+            # Previous logic: abs(diff) < 29.
+            # If diff is 31 (trigger is 31s ahead), it fails. Next run diff is -29. Fails (borderline).
+            # Better: if -2 <= diff <= 62 (catching slightly past and up to next minute)
+            # Or just abs(diff) < 32 to be safe.
+
+            if -5 <= diff <= 65: # Asepting slight delays or slightly early checks
+                logger.info(f"[SCHEDULER] 🔔 Triggering reminder for {appt.get('title')}")
                 subs = get_active_subscriptions(uid)
+                if not subs:
+                    logger.warning(f"[SCHEDULER] ⚠️ Nenhum subscription ativo para User {uid}")
+
                 msg = f"Lembrete: {appt.get('title', 'Compromisso')} em {reminder_minutes} min."
                 for sub in subs:
                     send_push(sub, msg, {"url": "/agenda"})
 
         # --- 2. DAY BEFORE ALERTS ---
+        # ... logic remains similar ...
         response = supabase.table("notification_settings")\
             .select("*")\
             .eq("day_before_alert_enabled", True)\
@@ -113,6 +135,8 @@ def check_reminders():
 
                 # Check if NOW matches Alert Time (roughly)
                 if now.hour == alert_h and now.minute == alert_m:
+                    logger.info(f"[SCHEDULER] 🌅 Verificando 'Day Before' para User {settings['user_id']}")
+
                     # Proceed to check tomorrow's appointments
                     uid = settings['user_id']
                     morning_threshold_str = settings.get('morning_threshold', '11:00:00')
@@ -134,6 +158,7 @@ def check_reminders():
                         count = len(user_appts)
                         first = user_appts[0]['title']
                         msg = f"Agenda de amanhã: {first}" + (f" e mais {count-1}." if count > 1 else ".")
+                        logger.info(f"[SCHEDULER] 🚀 ENVIANDO PUSH Day Before para User {uid}")
 
                         subs = get_active_subscriptions(uid)
                         for sub in subs:

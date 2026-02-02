@@ -14,6 +14,8 @@ export default defineConfig({
         short_name: 'Ordinis',
         description: 'Assistente pessoal inteligente',
         theme_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait',
         icons: [
           {
             src: 'pwa-192x192.png',
