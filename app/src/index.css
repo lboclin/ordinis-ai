@@ -11,3 +11,9 @@
     @apply bg-[#131314] text-gray-100 antialiased;
   }
 }
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+}

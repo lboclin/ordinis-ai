@@ -60,7 +60,7 @@ const AuthenticatedApp = () => {
         currentView={currentView}
       />
 
-      <main className="flex-1 h-full relative flex flex-col min-w-0 w-full overflow-x-hidden ml-0">
+      <main className="flex-1 h-full relative flex flex-col min-w-0 w-full overflow-x-hidden ml-0 pt-safe">
         {renderView()}
       </main>
     </div>

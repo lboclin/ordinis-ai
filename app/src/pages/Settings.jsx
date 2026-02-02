@@ -142,6 +142,7 @@ const Settings = ({ onMenuClick }) => {
     } catch (error) {
         console.error('Error saving notifications:', error);
         toast.error('Erro ao salvar configurações.');
+        alert("Erro ao salvar: " + (error.response?.data?.detail || error.message));
     } finally {
         setSavingNotif(false);
     }
