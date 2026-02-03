@@ -64,6 +64,7 @@ const Settings = ({ onMenuClick }) => {
     day_before_alert_time: '20:00',
     morning_threshold: '11:00'
   });
+  const [originalNotifSettings, setOriginalNotifSettings] = useState(null);
   const [loadingNotif, setLoadingNotif] = useState(true);
   const [savingNotif, setSavingNotif] = useState(false);
 
@@ -75,6 +76,11 @@ const Settings = ({ onMenuClick }) => {
   // Check provider (google vs email)
   const isGoogle = user?.app_metadata?.provider === 'google' ||
                    user?.identities?.some(id => id.provider === 'google');
+
+  // Check modification status
+  const isNotifModified = originalNotifSettings
+      ? JSON.stringify(notifSettings) !== JSON.stringify(originalNotifSettings)
+      : false;
 
   useEffect(() => {
     fetchCategories();
@@ -110,11 +116,13 @@ const Settings = ({ onMenuClick }) => {
 
         // Convert time formats if needed (HH:MM:SS -> HH:MM)
         const d = response.data;
-        setNotifSettings({
+        const normalized = {
             ...d,
             day_before_alert_time: d.day_before_alert_time.slice(0, 5),
             morning_threshold: d.morning_threshold.slice(0, 5)
-        });
+        };
+        setNotifSettings(normalized);
+        setOriginalNotifSettings(normalized);
     } catch (error) {
         console.error('Error fetching notif settings:', error);
     } finally {
@@ -138,6 +146,7 @@ const Settings = ({ onMenuClick }) => {
             headers: { Authorization: `Bearer ${token}` }
         });
 
+        setOriginalNotifSettings(notifSettings); // Update baseline
         toast.success('Configurações de notificação salvas!');
     } catch (error) {
         console.error('Error saving notifications:', error);
@@ -274,18 +283,80 @@ const Settings = ({ onMenuClick }) => {
         <div className="max-w-4xl mx-auto space-y-6">
             <h2 className="text-2xl font-bold mb-6 hidden md:block">Configurações</h2>
 
-            {/* CARD 1: NOTIFICAÇÕES (NOVO) */}
+            {/* CARD 1: CONTA (Reordered as Requested) */}
+            <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
+                    <User className="text-blue-400" size={20} />
+                    <h3 className="font-semibold">Conta</h3>
+                </div>
+                <div className="p-6 space-y-6">
+                    <div className="flex items-center gap-4">
+                        {avatarUrl ? (
+                            <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full border border-white/10" />
+                        ) : (
+                            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-gray-400">
+                                <User size={32} />
+                            </div>
+                        )}
+                        <div>
+                            <h4 className="text-lg font-medium text-white">{fullName}</h4>
+                            <p className="text-sm text-gray-400">{email}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-black/20 rounded-lg border border-white/5">
+                        <div className="flex items-center gap-3">
+                            <Lock size={18} className="text-gray-400" />
+                            <span className="text-gray-300 font-medium">Senha</span>
+                        </div>
+
+                        {isGoogle ? (
+                             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
+                                <ShieldCheck size={14} />
+                                <span>Conectado via Google Account</span>
+                             </div>
+                        ) : (
+                            <div className="flex items-center gap-4">
+                                <span className="text-gray-500 text-sm tracking-widest">●●●●●●●●</span>
+                                <button
+                                    onClick={handleResetPassword}
+                                    className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+                                >
+                                    Alterar Senha
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="pt-2">
+                        <button
+                            onClick={handleLogout}
+                            disabled={loadingLogout}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg transition-colors text-sm font-medium"
+                        >
+                            <LogOut size={16} />
+                            {loadingLogout ? 'Saindo...' : 'Desconectar da conta'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* CARD 2: NOTIFICAÇÕES (Reordered) */}
             <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
                 <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Bell className="text-yellow-400" size={20} />
                         <h3 className="font-semibold">Notificações</h3>
                     </div>
-                    {/* Botão de Salvar no Header do Card */}
+                    {/* Botão de Salvar Inteligente */}
                     <button
                         onClick={handleSaveNotification}
-                        disabled={savingNotif || loadingNotif}
-                        className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-gray-200 transition-colors"
+                        disabled={!isNotifModified || savingNotif || loadingNotif}
+                        className={`text-xs px-3 py-1 rounded transition-colors font-medium
+                            ${isNotifModified
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
+                                : 'bg-white/5 text-gray-500 cursor-not-allowed'}
+                        `}
                     >
                         {savingNotif ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
@@ -386,64 +457,6 @@ const Settings = ({ onMenuClick }) => {
                         )}
                     </div>
                 )}
-            </div>
-
-            {/* CARD 2: CONTA */}
-            <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
-                <div className="p-4 border-b border-white/5 bg-white/5 flex items-center gap-3">
-                    <User className="text-blue-400" size={20} />
-                    <h3 className="font-semibold">Conta</h3>
-                </div>
-                <div className="p-6 space-y-6">
-                    <div className="flex items-center gap-4">
-                        {avatarUrl ? (
-                            <img src={avatarUrl} alt="Avatar" className="w-16 h-16 rounded-full border border-white/10" />
-                        ) : (
-                            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-gray-400">
-                                <User size={32} />
-                            </div>
-                        )}
-                        <div>
-                            <h4 className="text-lg font-medium text-white">{fullName}</h4>
-                            <p className="text-sm text-gray-400">{email}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-black/20 rounded-lg border border-white/5">
-                        <div className="flex items-center gap-3">
-                            <Lock size={18} className="text-gray-400" />
-                            <span className="text-gray-300 font-medium">Senha</span>
-                        </div>
-
-                        {isGoogle ? (
-                             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
-                                <ShieldCheck size={14} />
-                                <span>Conectado via Google Account</span>
-                             </div>
-                        ) : (
-                            <div className="flex items-center gap-4">
-                                <span className="text-gray-500 text-sm tracking-widest">●●●●●●●●</span>
-                                <button
-                                    onClick={handleResetPassword}
-                                    className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
-                                >
-                                    Alterar Senha
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="pt-2">
-                        <button
-                            onClick={handleLogout}
-                            disabled={loadingLogout}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg transition-colors text-sm font-medium"
-                        >
-                            <LogOut size={16} />
-                            {loadingLogout ? 'Saindo...' : 'Desconectar da conta'}
-                        </button>
-                    </div>
-                </div>
             </div>
 
             {/* CARD 3: CATEGORIAS */}
