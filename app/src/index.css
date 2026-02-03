@@ -4,12 +4,15 @@
 
 @layer base {
   html, body {
-    @apply h-full w-full p-0 m-0 overflow-hidden bg-[#131314];
+    @apply h-full w-full p-0 m-0 overflow-hidden bg-[#0f0f0f];
+    min-height: 100vh;
+    min-height: 100dvh;
     overscroll-behavior-y: none;
   }
 
   #root {
     @apply h-full w-full;
+    isolation: isolate;
   }
 
   body {

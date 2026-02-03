@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import Agenda from './components/Agenda';
 import Dashboard from './components/Dashboard';
-import Login from './components/Login';
+import Login from './pages/Login';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import { registerServiceWorker, subscribeToPushNotifications } from './utils/pushNotifications';
@@ -23,6 +23,14 @@ const AuthenticatedApp = () => {
             await subscribeToPushNotifications();
         };
         initPush();
+
+        // Redirect new users to dashboard
+        if (user.created_at) {
+          const isNewUser = new Date(user.created_at).getTime() > Date.now() - 60000;
+          if (isNewUser) {
+            setCurrentView('dashboard');
+          }
+        }
     }
   }, [user]);
 
