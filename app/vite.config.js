@@ -13,7 +13,8 @@ export default defineConfig({
         name: 'Ordinis AI',
         short_name: 'Ordinis',
         description: 'Assistente pessoal inteligente',
-        theme_color: '#ffffff',
+        theme_color: '#0f0f0f',
+        background_color: '#0f0f0f',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

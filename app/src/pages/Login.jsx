@@ -28,17 +28,29 @@ const Login = () => {
             throw new Error('A senha deve ter pelo menos 8 caracteres.');
         }
 
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
+
         if (error) throw error;
 
+        // Check for existing user or successful creation
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+            // User exists but likely registered via another provider or email/password already exists
+            throw new Error('Este email já está cadastrado. Tente fazer login.');
+        }
+
         // Show success message
-        setSuccessMessage('Conta criada com sucesso! Verifique seu email para confirmar.');
-        // Don't auto-redirect, let user verify email or switch to login if needed.
-        // But usually, supabase might sign them in if email confirm is not strict.
-        // If strict, they need to check email.
+        setSuccessMessage('Conta criada com sucesso!');
+
+        // Auto-switch to login after 2 seconds
+        setTimeout(() => {
+            setIsSignUp(false);
+            setPassword('');
+            setConfirmPassword('');
+            setSuccessMessage(null);
+        }, 2000);
 
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -48,7 +60,12 @@ const Login = () => {
         if (error) throw error;
       }
     } catch (err) {
-      setError(err.message);
+      // Handle Supabase "User already registered" errors explicitly if message matches
+      if (err.message.includes('User already registered') || err.message.includes('already registered')) {
+          setError('Este email já está cadastrado. Tente fazer login.');
+      } else {
+          setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
