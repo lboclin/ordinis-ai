@@ -45,9 +45,10 @@ const Sidebar = ({ isOpen, onClose, onNavigate, currentView }) => {
       {/* Sidebar Container */}
       <div
         className={clsx(
-          "fixed inset-y-0 left-0 z-50 w-64 transform bg-chatgpt-sidebar border-r border-black/10 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-auto",
+          "fixed inset-y-0 left-0 z-50 w-64 transform bg-[#202123] border-r border-black/10 transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-auto",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{ paddingTop: 'max(0px, env(safe-area-inset-top))' }} // Fix for iOS Status Bar overlap
       >
         <div className="flex h-full flex-col">
           {/* Header */}

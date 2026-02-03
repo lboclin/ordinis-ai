@@ -3,12 +3,17 @@
 @tailwind utilities;
 
 @layer base {
-  html, body, #root {
-    @apply h-full w-full p-0 m-0 overflow-hidden;
+  html, body {
+    @apply h-full w-full p-0 m-0 overflow-hidden bg-[#131314];
+    overscroll-behavior-y: none;
+  }
+
+  #root {
+    @apply h-full w-full;
   }
 
   body {
-    @apply bg-[#131314] text-gray-100 antialiased;
+    @apply text-gray-100 antialiased;
   }
 }
 
