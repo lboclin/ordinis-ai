@@ -106,7 +106,12 @@ def check_reminders():
             # Better: if -2 <= diff <= 62 (catching slightly past and up to next minute)
             # Or just abs(diff) < 32 to be safe.
 
-            if -5 <= diff <= 65: # Asepting slight delays or slightly early checks
+            # Revised window [-5, 55] (width 60s) to match the 60s interval and avoid duplicates
+            # diff = trigger_time - now
+            # If trigger is 10:00:00.
+            # Run at 10:00:00 (diff=0). Matches.
+            # Run at 09:59:00 (diff=60). No Match.
+            if -5 <= diff <= 55:
                 logger.info(f"[SCHEDULER] 🔔 Triggering reminder for {appt.get('title')}")
                 subs = get_active_subscriptions(uid)
 

@@ -180,7 +180,9 @@ const Agenda = ({ onMenuClick }) => {
           const { error } = await supabase.from('appointments').insert({
               user_id: user.id,
               title: data.title,
-              date: `${data.date}T${data.time}:00`,
+              // Force -03:00 timezone for manual entries to match OpenAI service logic
+              // This ensures the backend scheduler (which uses 'America/Sao_Paulo') sees the correct time
+              date: `${data.date}T${data.time}:00-03:00`,
               description: "Agendamento manual"
           });
 
