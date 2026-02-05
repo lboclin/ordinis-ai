@@ -5,6 +5,7 @@ from services.openai_service import process_message, transcribe_audio
 from services.sheets import save_entry as save_to_sheets
 from services.db import get_user_from_token, save_expense, save_appointment, get_expenses, get_appointments, supabase
 from services.notification_service import save_subscription, get_notification_settings, update_notification_settings
+from services.analytics_service import generate_insights
 from services.scheduler import start_scheduler
 import os
 import uvicorn
@@ -303,6 +304,26 @@ def get_agenda_data(user = Depends(get_current_user)):
         return appointments
     except Exception as e:
         print(f"Error fetching agenda data: {e}")
+        return []
+
+@app.get("/insights")
+def get_insights_data(authorization: str = Header(None), user = Depends(get_current_user)):
+    try:
+        # Use User Token for RLS
+        token = authorization.replace("Bearer ", "")
+        url: str = os.environ.get("SUPABASE_URL")
+        key: str = os.environ.get("SUPABASE_KEY")
+
+        supabase_client = create_client(
+            url,
+            key,
+            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+        )
+
+        insights = generate_insights(user.id, supabase_client)
+        return insights
+    except Exception as e:
+        print(f"Error fetching insights: {e}")
         return []
 
 # Nova rota solicitada: /expenses

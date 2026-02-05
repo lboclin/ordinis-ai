@@ -1,88 +1,73 @@
-import React from 'react';
-import { CheckCircle, TrendingUp, TrendingDown, Lightbulb } from 'lucide-react';
+import React, { useState } from 'react';
+import { AlertTriangle, X, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const InsightsCard = ({ currentMonthData, previousMonthData }) => {
-  // Compare current vs previous
-  // We need to match categories
-  const insights = [];
+const InsightsCard = ({ insights }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
 
-  // Create a map for quick lookup
-  const prevMap = new Map(previousMonthData.map(c => [c.name, c.value]));
-
-  currentMonthData.forEach(curr => {
-      const prevVal = prevMap.get(curr.name);
-      if (prevVal) {
-          const diff = curr.value - prevVal;
-          const percentChange = (diff / prevVal) * 100;
-
-          if (percentChange > 10 && curr.value > 50) { // Only significant amounts
-             insights.push({
-                 type: 'warning',
-                 category: curr.name,
-                 percent: Math.round(percentChange),
-                 message: `Gastos com ${curr.name} subiram ${Math.round(percentChange)}%.`
-             });
-          } else if (percentChange < -10 && curr.value > 50) {
-              insights.push({
-                 type: 'success',
-                 category: curr.name,
-                 percent: Math.round(Math.abs(percentChange)),
-                 message: `Ótimo! Você economizou ${Math.round(Math.abs(percentChange))}% em ${curr.name}.`
-             });
-          }
-      }
-  });
-
-  // Sort insights: warnings first, then by magnitude
-  insights.sort((a, b) => {
-      if (a.type === 'warning' && b.type !== 'warning') return -1;
-      if (b.type === 'warning' && a.type !== 'warning') return 1;
-      return b.percent - a.percent;
-  });
-
-  const displayInsights = insights.slice(0, 2); // Show top 2
-
-  if (displayInsights.length === 0) {
-      return (
-        <div className="bg-[#202123] rounded-xl p-6 border border-white/5 shadow-lg h-full flex flex-col justify-center items-center text-center transition-all hover:border-white/10">
-             <div className="bg-white/5 p-3 rounded-full mb-3">
-                <CheckCircle className="text-gray-400" size={24} />
-             </div>
-             <p className="text-gray-400 text-sm">Seus gastos estão consistentes com o mês passado.</p>
-        </div>
-      );
+  if (!insights || insights.length === 0 || !isVisible) {
+    return null;
   }
 
+  const currentInsight = insights[currentIndex];
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % insights.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + insights.length) % insights.length);
+  };
+
+  const getIcon = (type) => {
+    if (type === 'success') return <CheckCircle2 className="w-5 h-5 text-green-400" />;
+    return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
+  };
+
+  const getBgColor = (type) => {
+    if (type === 'success') return 'bg-green-500/10 border-green-500/20';
+    return 'bg-yellow-500/10 border-yellow-500/20';
+  };
+
   return (
-    <div className="bg-[#202123] rounded-xl p-6 border border-white/5 shadow-lg h-full flex flex-col gap-4 transition-all hover:border-white/10">
-       <div className="flex items-center gap-2">
-            <Lightbulb size={16} className="text-yellow-500" />
-            <h3 className="text-gray-400 text-xs uppercase tracking-wider font-semibold">Insights</h3>
-       </div>
-       <div className="flex flex-col gap-3 h-full justify-center">
-           {displayInsights.map((insight, idx) => (
-               <div
-                key={idx}
-                className={`p-4 rounded-lg border flex items-start gap-3 transition-colors ${
-                    insight.type === 'warning'
-                        ? 'bg-red-500/5 border-red-500/10 hover:bg-red-500/10'
-                        : 'bg-green-500/5 border-green-500/10 hover:bg-green-500/10'
-                }`}
-               >
-                   <div className={`mt-0.5 ${insight.type === 'warning' ? 'text-red-400' : 'text-green-400'}`}>
-                       {insight.type === 'warning' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                   </div>
-                   <div>
-                       <p className={`text-sm font-semibold ${insight.type === 'warning' ? 'text-red-200' : 'text-green-200'}`}>
-                           {insight.type === 'warning' ? 'Atenção' : 'Economia'}
-                       </p>
-                       <p className="text-sm text-gray-400 leading-tight mt-1">
-                           {insight.message}
-                       </p>
-                   </div>
-               </div>
-           ))}
-       </div>
+    <div className={`mt-6 mb-2 p-4 rounded-xl border ${getBgColor(currentInsight.type)} relative transition-all duration-300 animate-in fade-in slide-in-from-top-4`}>
+      <button
+        onClick={() => setIsVisible(false)}
+        className="absolute top-2 right-2 text-gray-500 hover:text-gray-300 p-1"
+      >
+        <X size={16} />
+      </button>
+
+      <div className="flex items-start space-x-3 pr-8">
+        <div className="mt-1 flex-shrink-0">
+            {getIcon(currentInsight.type)}
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-200">
+            {currentInsight.message}
+          </p>
+          {insights.length > 1 && (
+            <div className="flex items-center gap-3 mt-3">
+              <div className="flex gap-1">
+                {insights.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-4 bg-gray-400' : 'w-1.5 bg-gray-700'}`}
+                  />
+                ))}
+              </div>
+              <div className="flex gap-2 ml-auto">
+                 <button onClick={handlePrev} className="p-1 hover:bg-white/5 rounded text-gray-400 hover:text-white">
+                    <ChevronLeft size={16} />
+                 </button>
+                 <button onClick={handleNext} className="p-1 hover:bg-white/5 rounded text-gray-400 hover:text-white">
+                    <ChevronRight size={16} />
+                 </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

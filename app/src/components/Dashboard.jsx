@@ -16,6 +16,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const Dashboard = ({ onMenuClick }) => {
   const { lastDataUpdate } = useAuth();
   const [expenses, setExpenses] = useState([]);
+  const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
@@ -38,14 +39,22 @@ const Dashboard = ({ onMenuClick }) => {
                { id: 5, category: 'Saúde', amount: 150, date: new Date().toISOString(), description: 'Farmácia' },
                { id: 6, category: 'Educação', amount: 500, date: new Date().toISOString(), description: 'Curso' },
            ]);
+           setInsights([
+               { type: 'warning', message: 'Atenção: Nesse ritmo, você gastará R$ 1200 em Alimentação, 20% a mais que mês passado.', category: 'Alimentação', value: 1200 },
+               { type: 'success', message: 'Parabéns! Você está economizando em Lazer. Previsão de fechar o mês com R$ 100 a menos.', category: 'Lazer', value: 100 }
+           ]);
            setLoading(false);
            return;
         }
 
-        const response = await axios.get(`${API_URL}/expenses`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        setExpenses(response.data);
+        const [expensesRes, insightsRes] = await Promise.all([
+            axios.get(`${API_URL}/expenses`, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.get(`${API_URL}/insights`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+
+        setExpenses(expensesRes.data);
+        setInsights(insightsRes.data);
+
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         // Fallback to mock on error too
@@ -153,18 +162,15 @@ const Dashboard = ({ onMenuClick }) => {
                     onCategoryClick={(cat) => setSelectedCategory(cat)}
                 />
 
-                {/* Second Row: Distribution and Insights */}
+                {/* Insights Card (New) */}
+                <InsightsCard insights={insights} />
+
+                {/* Second Row: Distribution */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 h-full">
+                    <div className="lg:col-span-3 h-full">
                         <DistributionCard
                             data={categories}
                             onCategoryClick={(cat) => setSelectedCategory(cat)}
-                        />
-                    </div>
-                    <div className="lg:col-span-1 h-full">
-                        <InsightsCard
-                            currentMonthData={categories}
-                            previousMonthData={previousMonthData}
                         />
                     </div>
                 </div>
