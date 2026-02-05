@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
@@ -23,6 +23,21 @@ const Dashboard = ({ onMenuClick }) => {
   // Modal States
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isAllCategoriesOpen, setIsAllCategoriesOpen] = useState(false);
+
+  const refreshInsights = useCallback(async () => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+
+        const response = await axios.get(`${API_URL}/insights`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setInsights(response.data);
+    } catch (error) {
+        console.error("Error refreshing insights:", error);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -163,7 +178,7 @@ const Dashboard = ({ onMenuClick }) => {
                 />
 
                 {/* Insights Card (New) */}
-                <InsightsCard insights={insights} />
+                <InsightsCard insights={insights} onRefresh={refreshInsights} />
 
                 {/* Second Row: Distribution */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
