@@ -28,6 +28,24 @@ const Login = () => {
             throw new Error('A senha deve ter pelo menos 8 caracteres.');
         }
 
+        // Check if user already exists (Try/Catch to handle RLS)
+        try {
+            const { data: existingUser } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', email)
+                .single();
+
+            if (existingUser) {
+                throw new Error('Este email já está cadastrado. Tente fazer login.');
+            }
+        } catch (checkErr) {
+            // Only throw if it's our specific error, otherwise ignore RLS/Network errors
+            if (checkErr.message === 'Este email já está cadastrado. Tente fazer login.') {
+                throw checkErr;
+            }
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -35,22 +53,31 @@ const Login = () => {
 
         if (error) throw error;
 
-        // Check for existing user or successful creation
+        // Supabase security: if identities is empty, user exists but is hidden
         if (data.user && data.user.identities && data.user.identities.length === 0) {
-            // User exists but likely registered via another provider or email/password already exists
             throw new Error('Este email já está cadastrado. Tente fazer login.');
         }
 
-        // Show success message
-        setSuccessMessage('Conta criada com sucesso!');
+        // SUCCESS FLOW
+        setSuccessMessage('Conta criada com sucesso! Fazendo login...');
 
-        // Auto-switch to login after 2 seconds
-        setTimeout(() => {
-            setIsSignUp(false);
-            setPassword('');
-            setConfirmPassword('');
-            setSuccessMessage(null);
-        }, 2000);
+        // Attempt Auto Login
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (signInError) {
+             // If auto-login fails (e.g., email confirmation required)
+             setSuccessMessage('Conta criada! Por favor, faça login.');
+             setTimeout(() => {
+                setIsSignUp(false);
+                setPassword('');
+                setConfirmPassword('');
+                setSuccessMessage(null);
+             }, 2000);
+        }
+        // If success, AuthContext/App.jsx will handle the state change and redirect
 
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -60,8 +87,8 @@ const Login = () => {
         if (error) throw error;
       }
     } catch (err) {
-      // Handle Supabase "User already registered" errors explicitly if message matches
-      if (err.message.includes('User already registered') || err.message.includes('already registered')) {
+      // Handle Supabase "User already registered" errors explicitly
+      if (err.message && (err.message.includes('User already registered') || err.message.includes('already registered'))) {
           setError('Este email já está cadastrado. Tente fazer login.');
       } else {
           setError(err.message);

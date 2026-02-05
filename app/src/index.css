@@ -3,20 +3,25 @@
 @tailwind utilities;
 
 @layer base {
-  html, body {
-    @apply h-full w-full p-0 m-0 overflow-hidden bg-[#0f0f0f];
-    min-height: 100vh;
-    min-height: 100dvh;
-    overscroll-behavior-y: none;
-  }
-
-  #root {
-    @apply h-full w-full;
-    isolation: isolate;
+  html {
+    background-color: #0f0f0f;
+    height: 100%;
   }
 
   body {
-    @apply text-gray-100 antialiased;
+    background-color: #0f0f0f;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    @apply text-gray-100 antialiased m-0 p-0 w-full overflow-hidden;
+  }
+
+  #root {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    isolation: isolate;
+    @apply w-full;
   }
 }
 
