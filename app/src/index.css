@@ -3,25 +3,32 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-color: #0f0f0f;
+  }
+
   html {
-    background-color: #0f0f0f;
+    background-color: var(--bg-color);
     height: 100%;
+    overflow: hidden;
   }
 
   body {
-    background-color: #0f0f0f;
-    min-height: 100vh;
-    min-height: 100dvh;
+    background-color: var(--bg-color);
+    height: 100%;
+    width: 100%;
+    margin: 0;
     overscroll-behavior-y: none;
-    @apply text-gray-100 antialiased m-0 p-0 w-full overflow-hidden;
+    -webkit-font-smoothing: antialiased;
+    @apply text-gray-100;
   }
 
   #root {
-    min-height: 100%;
+    height: 100%;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    isolation: isolate;
-    @apply w-full;
+    overflow: hidden;
   }
 }
 
