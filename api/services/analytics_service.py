@@ -88,7 +88,8 @@ def generate_insights(user_id: str, supabase_client):
                         "type": "warning",
                         "category": cat,
                         "message": f"Atenção: {cat} representa {pct}% de tudo que você gastou até agora.",
-                        "value": val
+                        "value": val,
+                        "score": val
                     })
 
         # Regra de Custo Único (Não temos 'hoje' específico aqui fácil sem filtrar de novo,
@@ -110,12 +111,18 @@ def generate_insights(user_id: str, supabase_client):
                         "type": "warning",
                         "category": cat,
                         "message": f"Você teve um gasto alto de R$ {val:.2f} em {cat} hoje.",
-                        "value": val
+                        "value": val,
+                        "score": val
                     })
              except:
                  pass
 
-        if not insights:
+        if insights:
+             insights.sort(key=lambda x: x.get('score', 0), reverse=True)
+             insights = insights[:3]
+             for i in insights:
+                 i.pop('score', None)
+        else:
              insights.append({
                 "type": "info", # Frontend might render as success or neutral
                 "category": "Geral",
@@ -139,11 +146,13 @@ def generate_insights(user_id: str, supabase_client):
         if prev_val > 0:
             if projected > (prev_val * 1.15) and (projected - prev_val > 50):
                 pct_increase = ((projected - prev_val) / prev_val) * 100
+                diff = projected - prev_val
                 insights.append({
                     "type": "warning",
                     "category": cat,
                     "message": f"Atenção: Nesse ritmo, você gastará R$ {projected:.2f} em {cat}, {int(pct_increase)}% a mais que mês passado.",
-                    "value": projected
+                    "value": projected,
+                    "score": abs(diff)
                 })
 
         # Rule 2: Economia Real
@@ -154,7 +163,8 @@ def generate_insights(user_id: str, supabase_client):
                     "type": "success",
                     "category": cat,
                     "message": f"Parabéns! Você está economizando em {cat}. Previsão de fechar o mês com R$ {saved:.2f} a menos.",
-                    "value": saved
+                    "value": saved,
+                    "score": abs(saved)
                 })
 
         # Rule 3: Dominância
@@ -168,7 +178,19 @@ def generate_insights(user_id: str, supabase_client):
                     "type": "warning",
                     "category": cat,
                     "message": f"{cat} está consumindo {pct_total}% do seu orçamento este mês.",
-                    "value": current_val
+                    "value": current_val,
+                    "score": current_val
                 })
+
+    # Ordenação e Limite
+    # 1. Ordene a lista decrescentemente pelo score.
+    insights.sort(key=lambda x: x.get('score', 0), reverse=True)
+
+    # 2. Aplique um slice insights[:3] para retornar no máximo 3 itens.
+    insights = insights[:3]
+
+    # 3. Remova a propriedade score do JSON final.
+    for i in insights:
+        i.pop('score', None)
 
     return insights
