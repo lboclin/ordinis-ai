@@ -53,7 +53,7 @@ const Sidebar = ({ isOpen, onClose, onNavigate, currentView }) => {
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h1 className="text-xl font-bold text-white">Ordinis AI</h1>
+            <h1 className="text-3xl font-bold text-white">Ordinis AI</h1>
             <button
               onClick={onClose}
               className="md:hidden text-gray-400 hover:text-white"

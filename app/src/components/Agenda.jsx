@@ -221,7 +221,7 @@ const Agenda = ({ onMenuClick }) => {
 
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row items-center justify-between w-full mb-8 gap-4 max-w-5xl">
-                    <h2 className="text-2xl font-bold hidden md:block">Minha Agenda</h2>
+                    <h2 className="text-3xl font-bold hidden md:block">Minha Agenda</h2>
                 </div>
 
                 {/* Week Navigator */}

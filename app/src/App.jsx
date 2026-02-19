@@ -24,8 +24,14 @@ const AuthenticatedApp = () => {
         };
         initPush();
 
+        // Check for specific path redirects (e.g. from password reset)
+        if (window.location.pathname === '/settings') {
+             setCurrentView('settings');
+             // Clean URL to avoid stuck state on refresh, back to root
+             window.history.replaceState({}, document.title, "/");
+        }
         // Redirect new users to dashboard
-        if (user.created_at) {
+        else if (user.created_at) {
           const isNewUser = new Date(user.created_at).getTime() > Date.now() - 60000;
           if (isNewUser) {
             setCurrentView('dashboard');

@@ -13,7 +13,11 @@ import {
   Download,
   Bell,
   Clock,
-  Calendar
+  Calendar,
+  Eye,
+  EyeOff,
+  Save,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -67,6 +71,16 @@ const Settings = ({ onMenuClick }) => {
   const [originalNotifSettings, setOriginalNotifSettings] = useState(null);
   const [loadingNotif, setLoadingNotif] = useState(true);
   const [savingNotif, setSavingNotif] = useState(false);
+
+  // Password Change State
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   // Account State
   const email = user?.email;
@@ -241,17 +255,31 @@ const Settings = ({ onMenuClick }) => {
     }
   };
 
-  const handleResetPassword = async () => {
-    try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '/reset-password',
-        });
-        if (error) throw error;
-        toast.success(`Email de redefinição enviado para ${email}`);
-    } catch (error) {
-        toast.error('Erro ao solicitar redefinição.');
-        console.error(error);
-    }
+  const handleUpdatePassword = async () => {
+      if (newPassword !== confirmNewPassword) {
+          toast.error("A nova senha e a confirmação não coincidem.");
+          return;
+      }
+      if (newPassword.length < 8) {
+          toast.error("A nova senha deve ter pelo menos 8 caracteres.");
+          return;
+      }
+
+      setUpdatingPassword(true);
+      try {
+          const { error } = await supabase.auth.updateUser({ password: newPassword });
+          if (error) throw error;
+          toast.success("Senha atualizada com sucesso!");
+          setIsChangingPassword(false);
+          setCurrentPassword('');
+          setNewPassword('');
+          setConfirmNewPassword('');
+      } catch (error) {
+          console.error("Error updating password:", error);
+          toast.error("Erro ao atualizar senha: " + error.message);
+      } finally {
+          setUpdatingPassword(false);
+      }
   };
 
   const handleLogout = async () => {
@@ -281,7 +309,7 @@ const Settings = ({ onMenuClick }) => {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
-            <h2 className="text-2xl font-bold mb-6 hidden md:block">Configurações</h2>
+            <h2 className="text-3xl font-bold mb-6 hidden md:block">Configurações</h2>
 
             {/* CARD 1: CONTA (Reordered as Requested) */}
             <div className="bg-[#202123] rounded-xl border border-white/5 overflow-hidden">
@@ -304,26 +332,112 @@ const Settings = ({ onMenuClick }) => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-black/20 rounded-lg border border-white/5">
-                        <div className="flex items-center gap-3">
-                            <Lock size={18} className="text-gray-400" />
-                            <span className="text-gray-300 font-medium">Senha</span>
+                    <div className="flex flex-col gap-4 p-4 bg-black/20 rounded-lg border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Lock size={18} className="text-gray-400" />
+                                <span className="text-gray-300 font-medium">Senha</span>
+                            </div>
+
+                            {isGoogle ? (
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
+                                    <ShieldCheck size={14} />
+                                    <span>Conectado via Google Account</span>
+                                </div>
+                            ) : (
+                                !isChangingPassword && (
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-gray-500 text-sm tracking-widest">●●●●●●●●</span>
+                                        <button
+                                            onClick={() => setIsChangingPassword(true)}
+                                            className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+                                        >
+                                            Mudar senha
+                                        </button>
+                                    </div>
+                                )
+                            )}
                         </div>
 
-                        {isGoogle ? (
-                             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
-                                <ShieldCheck size={14} />
-                                <span>Conectado via Google Account</span>
-                             </div>
-                        ) : (
-                            <div className="flex items-center gap-4">
-                                <span className="text-gray-500 text-sm tracking-widest">●●●●●●●●</span>
-                                <button
-                                    onClick={handleResetPassword}
-                                    className="text-sm text-blue-400 hover:text-blue-300 hover:underline"
-                                >
-                                    Alterar Senha
-                                </button>
+                        {isChangingPassword && !isGoogle && (
+                            <div className="mt-2 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Current Password */}
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500">Senha Atual</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showCurrentPassword ? "text" : "password"}
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                className="w-full bg-[#131314] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 pr-8"
+                                            />
+                                            <button
+                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                            >
+                                                {showCurrentPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {/* New Password */}
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500">Nova Senha</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showNewPassword ? "text" : "password"}
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full bg-[#131314] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 pr-8"
+                                            />
+                                            <button
+                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                            >
+                                                {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {/* Confirm New Password */}
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-gray-500">Confirmar Nova Senha</label>
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirmNewPassword ? "text" : "password"}
+                                                value={confirmNewPassword}
+                                                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                                className="w-full bg-[#131314] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 pr-8"
+                                            />
+                                            <button
+                                                onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                            >
+                                                {showConfirmNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setIsChangingPassword(false);
+                                            setCurrentPassword('');
+                                            setNewPassword('');
+                                            setConfirmNewPassword('');
+                                        }}
+                                        className="px-3 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleUpdatePassword}
+                                        disabled={updatingPassword}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {updatingPassword ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                                        Atualizar Senha
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
