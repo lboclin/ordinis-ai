@@ -144,7 +144,7 @@ const Dashboard = ({ onMenuClick }) => {
         >
           <Menu size={24} />
         </button>
-        <span className="ml-4 font-semibold text-white">Dashboard</span>
+        <span className="ml-4 font-bold text-xl text-white">Dashboard</span>
       </div>
 
       <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">

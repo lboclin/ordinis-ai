@@ -197,7 +197,7 @@ const ChatInterface = ({ onMenuClick }) => {
         >
           <Menu size={24} />
         </button>
-        <span className="ml-4 font-semibold text-white">Ordinis AI</span>
+        <span className="ml-4 font-bold text-xl text-white">Ordinis AI</span>
       </div>
 
       {/* Chat Area */}

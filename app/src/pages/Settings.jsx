@@ -304,7 +304,7 @@ const Settings = ({ onMenuClick }) => {
         >
           <Menu size={24} />
         </button>
-        <span className="ml-4 font-semibold text-white">Configurações</span>
+        <span className="ml-4 font-bold text-xl text-white">Configurações</span>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
@@ -333,19 +333,24 @@ const Settings = ({ onMenuClick }) => {
                     </div>
 
                     <div className="flex flex-col gap-4 p-4 bg-black/20 rounded-lg border border-white/5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Lock size={18} className="text-gray-400" />
-                                <span className="text-gray-300 font-medium">Senha</span>
-                            </div>
-
-                            {isGoogle ? (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
-                                    <ShieldCheck size={14} />
+                        {isGoogle ? (
+                             <div className="space-y-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Lock size={18} className="text-gray-400" />
+                                    <span className="text-gray-300 font-medium">Senha</span>
+                                </div>
+                                <div className="flex items-center gap-2 px-4 py-3 bg-[#131314] border border-white/10 rounded-lg text-blue-400 text-sm">
+                                    <ShieldCheck size={16} />
                                     <span>Conectado via Google Account</span>
                                 </div>
-                            ) : (
-                                !isChangingPassword && (
+                             </div>
+                        ) : (
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Lock size={18} className="text-gray-400" />
+                                    <span className="text-gray-300 font-medium">Senha</span>
+                                </div>
+                                {!isChangingPassword && (
                                     <div className="flex items-center gap-4">
                                         <span className="text-gray-500 text-sm tracking-widest">●●●●●●●●</span>
                                         <button
@@ -355,9 +360,9 @@ const Settings = ({ onMenuClick }) => {
                                             Mudar senha
                                         </button>
                                     </div>
-                                )
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
 
                         {isChangingPassword && !isGoogle && (
                             <div className="mt-2 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">

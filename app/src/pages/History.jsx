@@ -86,7 +86,7 @@ const History = ({ onMenuClick }) => {
             >
             <Menu size={24} />
             </button>
-            <span className="ml-4 font-semibold text-white">Histórico</span>
+            <span className="ml-4 font-bold text-xl text-white">Histórico</span>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center p-4 md:p-8">
