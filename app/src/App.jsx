@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import Login from './pages/Login';
 import History from './pages/History';
 import Settings from './pages/Settings';
+import { Toaster } from 'react-hot-toast';
 import { registerServiceWorker, subscribeToPushNotifications } from './utils/pushNotifications';
 
 const AuthenticatedApp = () => {
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-[#131314] text-gray-100 font-sans antialiased selection:bg-blue-500/30">
+      <Toaster position="top-center" />
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

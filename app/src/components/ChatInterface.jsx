@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Menu, Square } from 'lucide-react';
 import { clsx } from 'clsx';
 import axios from 'axios';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -188,7 +188,6 @@ const ChatInterface = ({ onMenuClick }) => {
 
   return (
     <div className="flex flex-1 flex-col h-full relative bg-[#131314]">
-      <Toaster position="top-center" />
       {/* Top Bar (Mobile Hamburger) */}
       <div className="sticky top-0 z-30 flex items-center p-4 md:hidden bg-[#131314] border-b border-white/10">
         <button
