@@ -86,13 +86,13 @@ const History = ({ onMenuClick }) => {
             >
             <Menu size={24} />
             </button>
-            <span className="ml-4 font-semibold text-white">Histórico</span>
+            <span className="ml-4 font-bold text-xl text-white">Histórico</span>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center p-4 md:p-8">
             <div className="w-full max-w-2xl flex flex-col">
 
-                <h2 className="text-2xl font-bold mb-8 hidden md:block">Histórico de Atividades</h2>
+                <h2 className="text-3xl font-bold mb-8 hidden md:block">Histórico de Atividades</h2>
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20">

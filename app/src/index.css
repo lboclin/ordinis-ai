@@ -30,6 +30,12 @@
     flex-direction: column;
     overflow: hidden;
   }
+
+  /* Fix for Safari/iOS input focus issues */
+  input, textarea, select {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 @layer utilities {

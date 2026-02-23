@@ -144,13 +144,13 @@ const Dashboard = ({ onMenuClick }) => {
         >
           <Menu size={24} />
         </button>
-        <span className="ml-4 font-semibold text-white">Dashboard</span>
+        <span className="ml-4 font-bold text-xl text-white">Dashboard</span>
       </div>
 
       <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
         {/* Header Desktop + Month Selector */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-             <h2 className="text-2xl font-bold hidden md:block">Visão Geral</h2>
+             <h2 className="text-3xl font-bold hidden md:block">Visão Geral</h2>
 
              <div className="flex items-center gap-4 bg-[#202123] px-4 py-2 rounded-full border border-white/5 shadow-sm">
                  <button onClick={handlePrevMonth} className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">

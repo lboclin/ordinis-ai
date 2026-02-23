@@ -72,7 +72,6 @@ export async function subscribeToPushNotifications() {
                 Authorization: `Bearer ${token}`
             }
         });
-        console.log("✅ PUSH REGISTRADO NO BACKEND:", response.data);
     }
 
     return subscription;
